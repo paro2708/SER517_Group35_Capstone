@@ -1,0 +1,156 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+% The preceding line is only needed to identify funding in the first footnote. If that is unneeded, please comment it out.
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+\begin{document}
+
+\title{Comparative Study and Analysis of Eye Gaze Estimation Models}
+
+\author{\IEEEauthorblockN{Harshitha Karur}
+\IEEEauthorblockA{
+1226508636}
+\IEEEauthorblockA{
+hkarur@asu.edu}
+\and
+\IEEEauthorblockN{Paromita Roy}
+\IEEEauthorblockA{
+1224708511}
+\IEEEauthorblockA{
+proy13@asu.edu}
+\and
+\IEEEauthorblockN{Rahul Ghanghas}
+\IEEEauthorblockA{
+1225359486}
+\IEEEauthorblockA{
+rghangha@asu.edu}
+\and
+\IEEEauthorblockN{Rushikesh Patil}
+\IEEEauthorblockA{
+1226128204}
+\IEEEauthorblockA{
+rpatil29@asu.edu}}
+
+\maketitle
+
+\begin{abstract}
+To be finished after the paper is completed
+\end{abstract}
+
+\begin{IEEEkeywords}
+eye-tracking
+\end{IEEEkeywords}
+
+\section{Introduction}
+
+In today's technologically driven landscape, comprehending how individuals interact with digital tools has become increasingly critical. Eye tracking technology, which elucidates where and what users focus on, plays a pivotal role in this domain. It offers insights into users' thoughts, intentions, and preferences, proving invaluable for enhancing website designs, determining the focal points in advertisements, aiding researchers in understanding human behavior, and developing technologies to assist individuals with disabilities. Despite its considerable utility, maximizing the benefits of eye-tracking technology presents challenges due to accessibility issues, variable precision levels, and substantial computational requirements.
+
+Traditional eye-tracking methodologies, which employ specialized sensors to accurately track gaze direction, hold significant promise. Devices such as the Tobii Eye Tracker\cite{tobii-eye-tracker} provide precise data that can significantly contribute to the advancement of technology. However, these devices are expensive and complex to set up \cite{tobii-eye-tracker}, limiting their applicability, particularly in environments where financial and resource constraints are prevalent. Conversely, utilizing standard webcams to monitor gaze direction offers a more accessible and cost-effective solution \cite{webcams-for-eyetracking} that could broaden the technology's reach. Yet, this approach has not achieved the accuracy or efficiency levels of more sophisticated sensor-based systems, complicating its application in scenarios that demand high precision, such as in developing accessible technology, conducting in-depth analyses of user experiences on websites, or exploring the subtleties of human psychology.
+
+Further elaboration reveals that recent statistics point to an increasing deployment rate of eye-tracking technologies, particularly within marketing research, e-commerce, and educational tools, indicating an expansion of its application beyond conventional research settings. The market for eye-tracking technology has been experiencing a notable annual growth rate, reflecting a rising acknowledgment of its value across various sectors \cite{market-growth}.
+
+Additionally, the use of eye-tracking technology in fields such as virtual reality (VR) significantly enhances the user experience by facilitating more natural and intuitive interactions within digital environments \cite{VR-eyetracking}. In the context of accessibility, eye tracking plays a crucial role in developing communication aids for individuals with severe motor impairments, enabling them to interact with computers and the broader world through gaze alone. Furthermore, in psychological research and cognitive studies, eye tracking provides new pathways for understanding the mechanisms underlying human attention, learning processes, and disorders.
+
+Despite these encouraging developments, a key challenge persists in refining eye-tracking methodologies to narrow the gap between high-cost, high-accuracy systems and more accessible yet less precise alternatives. Improving the accuracy and computational efficiency of webcam-based eye tracking could democratize access to this insightful technology, facilitating its wider application across different sectors and rendering the digital world more inclusive and engaging for all users.
+
+\section{Problem Statement}
+
+This research project aims to conduct a comprehensive comparative analysis of different eye gaze tracking estimation models, including GazeRefineNet, Odabe, and the Open Gaze model and propose enhancements to these models. The goal is to identify the optimal model based on application-specific requirements, considering factors such as accuracy, computational demand, ease of use, and scalability. By elucidating the strengths and limitations of each model, this study seeks to uncover opportunities for performance enhancement and wider application of eye-tracking technologies, ultimately contributing to the development of more intuitive, engaging, and accessible digital interfaces.
+
+\section{Literature Review}
+
+\subsection{Overview}\label
+Eye-tracking technology has emerged as a transformative tool for understanding human behavior and interaction with digital interfaces. By measuring where and what individuals look at, eye tracking offers invaluable insights into cognitive processes, user interface design, accessibility, and much more. This technology leverages the eyes as a pathway to gather information, which is then processed by the brain, thereby serving as a critical solution to deciphering the complex and dynamic interface between humans and technology.
+
+In the field of user experience (UX) design, eye tracking plays a pivotal role in optimizing website and software interfaces. By analyzing where users focus their attention, designers can streamline interfaces to enhance usability and ensure critical information is easily accessible. Similarly, in marketing and advertising, eye tracking determines the effectiveness of ad placements and designs by measuring visual attention. Eye gaze tracking estimation can also be used in creating accessible communication devices for individuals with mobility impairments, thus broadening the scope of the technology's usability.
+
+In the realm of gaze estimation, Convolutional Neural Networks (CNNs) and Recurrent Neural Networks (RNNs) are commonly employed to analyze spatial and temporal dependencies in eye images. This enhances the accuracy of predicting gaze direction, particularly in appearance-based gaze estimation\cite{review_benchmark} methods that utilize visual information from the human eye. Such approaches leverage deep learning to achieve precise gaze estimation.
+
+\subsection{Dataset}\label{AA}
+Despite the success of deep learning in computer vision, its impact on eye tracking has been limited by the scarcity of large-scale data. Public datasets on gaze estimation, like GazeCapture, play a vital role in providing insights into the diversity and challenges within these datasets. GazeCapture, a dataset collected through crowdsourcing\cite{gazecapture-1}, stands out for its coverage of various lighting conditions, head motions, and unconstrained 2D gaze point estimation methods.
+
+iTracker\cite{gazecapture-1}, a CNN for gaze prediction, is trained using the GazeCapture dataset, achieving real-time performance on modern mobile devices. The technical details provided by Krafka et al. highlight the importance of calibration in reducing prediction errors\cite{gazecapture-1}. iTracker outperforms existing approaches\cite{review_benchmark}, positioning itself as a benchmark for the next generation of eye-tracking solutions.
+
+Lightweight architectures contribute to high performance on the GazeCapture dataset, achieving remarkable prediction errors. The proposed gaze estimation model employs ResNet and Inception architecture\cite{gazecapture-2}, showcasing a departure from existing methods and an emphasis on advanced computer vision techniques. 
+
+In a study by Rishi et al. in 2022, the efficacy of ResNet and Inception architectures\cite{gazecapture-2} and ensemble calibration for gaze tracking is emphasized. The potential applications in e-commerce, digital accessibility, and medical diagnosis underscore the significance of continuous development in this field.
+
+While GazeCapture\cite{gazecapture-1} has significantly advanced the field, limitations exist, such as questions about generalizability to real-world scenarios and potential accuracy challenges due to head pose variations\cite{gazecapture-1} and occlusions. 
+
+\subsection{GazeRefineNet}
+
+The GazeRefineNet \cite{grn1} model represents a significant advancement in the field of eye tracking. Unlike traditional methods that rely heavily on external hardware components, such as infrared (IR) sensors, GazeRefineNet utilizes webcam images to refine gaze estimates. This approach not only underscores the practicality and cost-efficiency of webcam-based solutions but also eliminates the need for specialized hardware. The methodology behind GazeRefineNet involves leveraging both the appearance of the user’s eyes and the screen content they view. By employing an end-to-end learning approach, the model achieves high accuracy in gaze estimation without requiring personalized calibration, making it a versatile solution for widespread application. 
+
+"Towards End-to-end Video-based Eye-Tracking" written by Seonwook Park, Emre Aksan, Xucong Zhang, and Otmar Hilliges \cite{grn1}, details the GazeRefineNet model and highlights its remarkable achievements. The model demonstrates a significant improvement in Point-of-Gaze (PoG) estimates, achieving up to a 28\% improvement and reducing the angular error to 2.49°. These results are pivotal, as they pave the way for high-accuracy screen-based eye tracking using easily accessible webcam sensors. The implications of such advancements are profound, offering the potential to make eye-tracking more accessible and applicable across various disciplines.
+
+One notable limitation is the potential variability in the model's performance across different environmental conditions and webcam qualities. Despite its high accuracy in controlled settings, variations in lighting, user distance from the camera, and the physical attributes of users (such as eyewear or eye physiology) may impact the reliability of gaze estimates in real-world applications. Furthermore, while GazeRefineNet eliminates the need for specialized hardware, making eye-tracking more accessible, the computational demands of processing and analyzing high-quality webcam images in real-time could pose challenges for deployment on less powerful systems. Additionally, the model's dependence on the quality of input data raises concerns about its performance with lower-quality webcams or in settings with suboptimal lighting conditions. These factors suggest areas for further refinement and research, particularly in improving the model's robustness and adaptability to diverse operational environments and hardware configurations.
+
+\vspace{\baselineskip}
+
+\subsection{OpenGaze Model}
+OpenGaze\cite{openGaze1}\cite{openGaze2} model is an open-source implementation of a smartphone-based gaze tracker using TensorFlow and PyTorch, inspired by a proprietary Google model.\cite{openGaze1} It achieved accuracy comparable to Google's model on the MIT GazeCapture\cite{gazecapture-1} dataset without requiring specialized hardware. This demonstrated the potential to enable large-scale eye-tracking research and applications in accessibility, healthcare, etc. 
+The paper\cite{openGaze1} builds off the proprietary work introduced in the study by Valliappan et al. (2020).\cite{b6} It presents a comprehensive review of datasets and methodologies that have been pivotal in refining the accuracy of gaze predictions. This paper \cite{openGaze1} delves into the technical details of the OpenGazeModel's architecture and its performance across various datasets, highlighting the significant improvements over existing models. It also discusses the broader implications of these advancements for developing more intuitive and natural user interfaces. This Google paper proposed a machine-learning method for smartphone-based eye tracking but did not release code or models. The paper\cite{openGaze1} aimed to replicate eye movement patterns during reading, image viewing, and other tasks.
+
+Wherein, the paper\cite{openGaze2} presented a comprehensive evaluation of appearance-based gaze estimation model-based methods and commercial eye trackers. It acknowledges the foundational work of researchers who have contributed to enhancing the accuracy and robustness of gaze tracking under varied environmental conditions and across different user populations. This paper\cite{openGaze2} situates the OpenGaze toolkit within the continuum of research, arguing for its potential to democratize gaze-based HCI through ease of integration and adaptability to diverse application needs. The paper\cite{openGaze2} discussed the implication of the results for major gazed-based Human-Computer Interaction (HCI) applications like explicit eye input, attentive UIs, gaze-based user modeling, and passive eye monitoring. It provides easy-to-use APIs and implementation of the full pipeline for non-experts. 
+
+Paper\cite{openGaze1} demonstrates the performance of the PyTorch models, detailing their predictive accuracy across various datasets and comparing them to Google's benchmarks. It includes an in-depth analysis of the application of Support Vector Regression (SVR) for personalization, showing its impact on improving gaze tracking accuracy. This section demonstrates the potential of SVR for enhancing model precision, with detailed comparisons of error rates before and after SVR application, across different devices and conditions. SVR was applied to methods that enhanced performance by around 13\% with MIT Split\cite{gazecapture-1}  whereas in 20\% enhancement in performance with Google Split. The results obtained by an upgraded model signify the positive impact of the SVR technique.\cite{openGaze1} Additionally, it explores the use of affine transformations for further accuracy improvements, indicating the nuanced balance between model generalization and individualized refinement.
+
+The key challenges are limited public data, model efficiency constraints, and generalization. Paper\cite{openGaze1}\cite{openGaze2} addresses the quest for better accuracy and reliability in gaze estimation technologies, especially in outdoor settings with varied lighting conditions and user environments.
+
+\vspace{\baselineskip}
+
+\subsection{ODABE}
+Salvalaio and Ramos introduced ODABE (Online Deep Appearance-Based Eye-Tracking) \cite{IEEEhowto:odabe} to address the limitations of existing eye-tracking models in adapting to different contexts rapidly. They identified a gap in the literature where current methods could not generalize effectively across diverse combinations of users, environments, and devices. To overcome this challenge, they proposed ODABE, which integrates online transfer learning into appearance-based eye-tracking models. ODABE combines pre-training on established datasets like MPIIGaze with online fine-tuning using a new dataset collected during user interactions. During pre-training, a baseline model is trained using MPIIGaze, and then, when new contexts arise, ODABE leverages online transfer learning to adjust the model rapidly to the specific context. This approach enables the model to self-adapt and improve its performance in real-time, without the need for extensive retraining or manual adjustments. Experimental evaluations conducted by Salvalaio and Ramos demonstrated the effectiveness of ODABE in handling diverse eye-tracking contexts. Compared to previous methods, ODABE showed a significant reduction in prediction error, with an average decrease of 50.95\% across tested cases. These results highlight the efficacy of ODABE in achieving robust and adaptable eye-tracking performance in various scenarios. In summary, ODABE represents a novel approach to appearance-based eye-tracking, addressing the challenge of context adaptation through online transfer learning. The experimental findings underscore the effectiveness of ODABE in improving eye-tracking accuracy across different user, environment, and device combinations.
+
+\section{Challenges and Future Work}
+To be finished after the paper is completed
+ 
+% The robustness and accuracy in studying gaze estimation in more depth for various UI contexts, and leveraging gaze input for novel interfaces and applications can be accounted for in for future work. 
+
+\section{Conclusion}
+To be finished after the paper is completed
+
+\begin{thebibliography}{00}
+
+\bibitem{tobii-eye-tracker}
+Housholder, A., Reaban, J., Peregrino, A., Votta, G., and Mohd, T. K. (2021, December). Evaluating accuracy of the Tobii eye tracker 5. In International Conference on Intelligent Human Computer Interaction (pp. 379-390). Cham: Springer International Publishing.
+
+\bibitem{webcams-for-eyetracking}
+Nairit Bandyopadhyay, Sébastien Riou, Didier Schwab. Webcam as Alternate Option for Eye-Trackers in Gaze Gaming Software: GazePlay. [Research Report] Groupe d’Étude en Traduction Automatique/Traitement Automatisé des Langues et de la Parole; LIG (Laboratoire informatique de Grenoble); Université Grenoble Alpes. 2021. ffhal-03357649f
+
+\bibitem{gazecapture-1}K. Krafka, A. Khosla, P. Kellnhofer, H. Kannan, S. Bhandarkar, W. Matusik, and A. Torralba, “Eye tracking for everyone,” in Proceedings of the IEEE conference on computer vision and pattern recognition, 2016,pp. 2176–2184.
+
+\bibitem{gazecapture-2}
+R. Athavale, L. S. Motati, and R. Kalahasty, “One Eye is All You Need: Lightweight Ensembles for Gaze Estimation with  Single Encoders,” arXiv (Cornell University), Nov. 2022, doi: 10.48550/arxiv.2211.11936.
+
+
+\bibitem{market-growth}
+“Eye Tracking Market Size, share and Trends Analysis Report by type (Optical, eye attached tracking), by application (Healthcare, consumer electronics), by component (Hardware, software), by location, and segment Forecasts, 2022 - 2030,” May 09, 2022. https://www.grandviewresearch.com/industry-analysis/eye-tracking-market
+
+\bibitem{VR-eyetracking}
+Adhanom, I. B., MacNeilage, P. R., and Folmer, E. (2023). Eye Tracking in Virtual Reality: a Broad Review of Applications and Challenges. Virtual Reality, 27(2), 1481–1505. https://doi.org/10.1007/s10055-022-00738-z
+\bibitem{grn1} Seonwook Park, Emre Aksan, Xucong Zhang, and Otmar Hilliges, `Towards End-to-end Video-based Eye-Tracking,'', 2020 
+\bibitem{grn2} Melanie Heck, Christian Becker, Viola Deutscher, `Webcam Eye Tracking for Desktop and Mobile Devices: A Systematic Review'', 2023
+\bibitem{openGaze1}Reddy, S., \& Reddy, J. S. (2023). Open Gaze: Open Source eye tracker for smartphone devices using Deep Learning. ArXiv. 2308.13495
+\bibitem{openGaze2} Zhang, X., Sugano, Y., \& Bulling, A. (2019). Evaluation of Appearance-Based Methods and Implications for Gaze-Based Applications. ArXiv. https://doi.org/10.1145/3290605.3300646
+
+\bibitem{b6}
+R. Athavale, L. S. Motati, and R. Kalahasty, “One Eye is All You Need: Lightweight Ensembles for Gaze Estimation with  Single Encoders,” arXiv (Cornell University), Nov. 2022, doi: 10.48550/arxiv.2211.11936.
+
+\bibitem{IEEEhowto:odabe} 
+Bruno Klein Salvalaio and Gabriel de Oliveira Ramos, (2019), Self-Adaptive Appearance-Based Eye-Tracking with Online Transfer Learning. In 8th Brazilian Conference on Intelligent Systems (BRACIS), October 2019.
+
+\bibitem{review_benchmark}
+Y. Cheng, H. Wang, Y. Bao, and F. Lu, “Appearance-based gaze estimation with deep Learning: a review and benchmark.,” arXiv (Cornell University), Apr. 2021, [Online]. Available: http://export.arxiv.org/pdf/2104.12668
+
+ 
+\end{thebibliography}
+\vspace{12pt}
+
+\end{document}
