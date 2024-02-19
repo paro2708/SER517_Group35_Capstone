@@ -6,6 +6,7 @@ class GazeCaptureDataset(data.Dataset):
 
     def __init__(self, df):
         self.df = df
+    
     def __getitem__(self, i):
         r = self.df.iloc[i]
         x = cv2.imread(r['imagename']).astype(dtype=np.float32)
