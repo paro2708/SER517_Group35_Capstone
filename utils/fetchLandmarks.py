@@ -20,11 +20,13 @@ def in_box(box, point):
     return False
 
 def add_kps(files, p):
+    # Initialize DLib's face detector and shape predictor with the given model.
     detector = dlib.get_frontal_face_detector()
     predictor = dlib.shape_predictor(p)
-    no_face = 0
-    err_ctr = 0
-    buffer = 10
+
+    no_face = 0  # Number of images where no face was detected.
+    err_ctr = 0  # Number of images where landmarks were not correctly identified within the eye boxes.
+    buffer = 10  # Buffer to increase the eye bounding box to ensure landmark detection within this area.
     for i in tqdm(files):
         img = cv2.imread(i)
         bw_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -40,7 +42,7 @@ def add_kps(files, p):
                 if(face.left()<reye_x and face.top()<reye_y and face.right()>leye_x and face.bottom()>leye_y+leye_h):
                     fx, fy, fw, fh = face.left(), face.top(), face.right()-face.left, face.bottom()-face.top()
                     break
-        
+        # Detect landmarks within the detected face region.
         face_rect = dlib.rectangle(fx, fy, fx+fw, fy+fh)
         kps = predictor(bw_img, face_rect)
         

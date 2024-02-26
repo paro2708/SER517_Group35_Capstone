@@ -3,6 +3,11 @@ import os
 import numpy as np
 from glob import glob
 
+'''
+Frames from MIT Dataset, split in train/test.
+Create a metadata for each image 
+'''
+
 def convert_dataset(files,out_root):
     for i in files:
         with open(i+"/info.json") as f:
@@ -17,6 +22,8 @@ def convert_dataset(files,out_root):
         r_eye_det = json.load(open(i+'/appleRightEye.json'))
         dot = json.load(open(i+'/dotInfo.json'))
         
+        # Determine frames where the device is in portrait orientation and both eyes are detected.
+
         portrait_orientation = np.asarray(screen_info["Orientation"])==1
         l_eye_valid, r_eye_valid = np.array(l_eye_det['IsValid']), np.array(r_eye_det['IsValid'])
         valid_ids = l_eye_valid*r_eye_valid*portrait_orientation
@@ -26,7 +33,8 @@ def convert_dataset(files,out_root):
             fname = str(frame_idx).zfill(5)
             src,target = i+'/frames/'+fname+".jpg", out_dir+"/images/"+expt_name+'__'+fname+'.jpg'
             copy_file_manual(src,target)
-            
+           
+            # Prepare metadata for the current frame. 
             meta = {}
             meta['device'] = device
             meta['screen_h'], meta['screen_w'] = screen_info["H"][frame_idx], screen_info["W"][frame_idx]
