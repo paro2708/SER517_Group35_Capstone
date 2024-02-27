@@ -29,3 +29,15 @@ class NetVgg(nn.Module):
             elif isinstance(m, nn.BatchNorm2d):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
+            elif isinstance(m, nn.Linear):
+                m.weight.data.normal_(0, 0.01)
+                m.bias.data.zero_()
+
+    def forward(self, x):
+        x = x.permute(0, 3, 2, 1)
+        x = self.extractor(x)
+        x = x.view(x.size(0), -1)
+        x = self.regressor(x)
+        x_axis = x[:, 0].view(-1, 1)
+        y_axis = x[:, 1].view(-1, 1)
+        return x_axis, y_axis
