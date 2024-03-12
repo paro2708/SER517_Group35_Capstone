@@ -89,6 +89,7 @@ def normalizeData(img, face, hr, ht, gc, cam):
         gc_normalized = np.dot(R, gc_normalized)
         gc_normalized = gc_normalized/np.linalg.norm(gc_normalized)
         
+        
         data.append([img_warped, hr_norm, gc_normalized])
         
     return data
