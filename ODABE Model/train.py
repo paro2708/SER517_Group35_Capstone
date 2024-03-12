@@ -37,3 +37,67 @@ def plot_and_save_debug_image(i, face_crop, x_true, y_true, x_pred, y_pred, loss
     img = cv2.putText(img, '{:.2f}'.format(loss), (40, 50), cv2.FONT_HERSHEY_SIMPLEX, 2, 255, 2, cv2.LINE_AA)
     cv2.imwrite('simulation/{}.jpg'.format(i), img)
     print()
+
+def forward_backward_gen(model, loader):
+    for i, (x, x_true, y_true) in enumerate(loader):
+        x = x.to(device)
+        x_true = x_true.to(device)
+        y_true = y_true.to(device)
+
+        x_pred, y_pred = model(x)
+
+        loss_batch = loss_fn(x_true, y_true, x_pred, y_pred)
+
+        if args.video:
+            plot_and_save_debug_image(
+                i,
+                np.squeeze(x.cpu().data.numpy()),
+                float(x_true.cpu().data.numpy()),
+                float(y_true.cpu().data.numpy()),
+                float(x_pred.cpu().data.numpy()),
+                float(y_pred.cpu().data.numpy()),
+                float(loss_batch.cpu().data.numpy())
+            )
+
+        yield loss_batch
+
+
+def evaluate(model, dataset, params):
+    loader = DataLoader(dataset=dataset, batch_size=params['batch_size'])
+    losses = []
+    for loss in forward_backward_gen(model, loader):
+        losses.append(float(loss))
+    return np.mean(losses)
+
+def train(model, parameters, train_dataset, valid_dataset, params, threshold_loss=None, backprop=True):
+    loader = DataLoader(dataset=train_dataset, batch_size=params['batch_size'])
+
+    optimizer = SGD(parameters, lr=params['learning_rate'], momentum=0.9)
+
+    epochs = params['epochs']
+
+    loss_train_all = []
+    loss_valid_all = []
+    losses_batch = []
+    for epoch in range(epochs):
+        losses_epoch = []
+        for i, loss in enumerate(forward_backward_gen(model, loader)):
+            losses_epoch.append(float(loss))
+            losses_batch.append(float(loss))
+
+            if threshold_loss is None or loss > threshold_loss:
+                if backprop:
+                    optimizer.zero_grad()
+                    loss.backward()
+                    optimizer.step()
+
+            if i % 50 == 0:
+                print('train epoch {}/{} batch {}/{} loss {}'.format(
+                    epoch + 1, epochs, i + 1, len(loader), float(loss)
+                ))
+        loss_train = np.mean(losses_epoch)
+        loss_valid = evaluate(model, valid_dataset, params)
+        loss_train_all.append(loss_train)
+        loss_valid_all.append(loss_valid)
+        print('epoch {} finished with train loss {} and valid loss {}'.format(epoch + 1, loss_train, loss_valid))
+    return losses_batch, loss_train_all, loss_valid_all
