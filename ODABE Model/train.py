@@ -101,3 +101,26 @@ def train(model, parameters, train_dataset, valid_dataset, params, threshold_los
         loss_valid_all.append(loss_valid)
         print('epoch {} finished with train loss {} and valid loss {}'.format(epoch + 1, loss_train, loss_valid))
     return losses_batch, loss_train_all, loss_valid_all
+
+def create_or_load_model():
+    weights = listdir('weights')
+    if len(weights) > 1:
+        weights_filename, *_ = sorted(weights, reverse=True)
+        loss = float(weights_filename.split('-')[1])
+        with open('weights/{}'.format(weights_filename), 'rb') as f:
+            return torch.load(f), loss
+    return NetVgg(), None
+
+
+def fine_tune_stage(model, train_dataset, valid_dataset, params, threshold_loss, backprop=True):
+    params['batch_size'] = 1
+    params['epochs'] = 1
+
+    valid_loss_custom = evaluate(model, valid_dataset, params)
+    print('valid loss custom', valid_loss_custom)
+
+    parameters = list(model.parameters())[16:]
+
+    losses_batch, loss_train_all, loss_valid_all = train(model, parameters, train_dataset, valid_dataset, params, threshold_loss, backprop)
+
+    return losses_batch
