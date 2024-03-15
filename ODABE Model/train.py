@@ -124,3 +124,33 @@ def fine_tune_stage(model, train_dataset, valid_dataset, params, threshold_loss,
     losses_batch, loss_train_all, loss_valid_all = train(model, parameters, train_dataset, valid_dataset, params, threshold_loss, backprop)
 
     return losses_batch
+
+if __name__ == '__main__':
+    parser = ArgumentParser()
+    parser.add_argument('-v', '--video', help='generate video frames', action='store_true')
+
+    args = parser.parse_args()
+
+    train_dataset, valid_dataset, test_dataset = get_mpii_datasets()
+
+    params = {
+        'learning_rate': 0.001,
+        'epochs': 4,
+        'batch_size': 8
+    }
+
+    model, test_loss = create_or_load_model()
+
+    print(model)
+
+    model = model.to(device)
+    if test_loss is None:
+        losses_batch, loss_train_all, loss_valid_all = train(model, model.parameters(), train_dataset, valid_dataset, params=params)
+
+        print('loss_train_all: {}'.format(loss_train_all))
+        print('loss_valid_all: {}'.format(loss_valid_all))
+        print('losses_batch: {}', losses_batch)
+        # plt.plot(range(len(loss_train_all)), loss_train_all, label='train')
+        # plt.plot(range(len(loss_valid_all)), loss_valid_all, label='valid')
+        # plt.legend()
+        # plt.show()
