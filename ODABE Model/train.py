@@ -154,3 +154,38 @@ if __name__ == '__main__':
         # plt.plot(range(len(loss_valid_all)), loss_valid_all, label='valid')
         # plt.legend()
         # plt.show()
+
+        test_loss = evaluate(model, test_dataset, params)
+
+        print('test loss', test_loss)
+
+        with open('weights/weights-{:2f}'.format(test_loss), 'wb') as f:
+            torch.save(model, f)
+
+        params['learning_rate'] /= 8
+
+        stage1_train_dataset, stage_1_valid_dataset = get_custom_datasets(1, split_index=400, shuffle=True)
+        stage2_train_dataset, stage_2_valid_dataset = get_custom_datasets(2, split_index=400, shuffle=True)
+
+        print('stage1_offline')
+        stage1_offline = fine_tune_stage(model, stage1_train_dataset, stage_1_valid_dataset, params, threshold_loss=test_loss, backprop=False)
+        print('stage2_offline')
+        stage2_offline = fine_tune_stage(model, stage2_train_dataset, stage_2_valid_dataset, params, threshold_loss=test_loss, backprop=False)
+
+        print('stage1_online')
+        stage1_online = fine_tune_stage(model, stage1_train_dataset, stage_1_valid_dataset, params, threshold_loss=test_loss)
+        print('stage2_online')
+        stage2_online = fine_tune_stage(model, stage2_train_dataset, stage_2_valid_dataset, params, threshold_loss=test_loss)
+
+        from charts import plot_smooth
+        with open('data-charts/losses_batch', 'wb') as f:
+            pickle.dump(losses_batch, f)
+        with open('data-charts/stage1_online', 'wb') as f:
+            pickle.dump(stage1_online, f)
+        with open('data-charts/stage2_online', 'wb') as f:
+            pickle.dump(stage2_online, f)
+        with open('data-charts/stage1_offline', 'wb') as f:
+            pickle.dump(stage1_offline, f)
+        with open('data-charts/stage2_offline', 'wb') as f:
+            pickle.dump(stage2_offline, f)
+        # plot_smooth(losses_batch, stage1_online, stage2_online)
