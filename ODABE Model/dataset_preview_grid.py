@@ -16,3 +16,38 @@ def set_image(arr, row, col, img):
     l_col = col * 100
     h_col = l_col + 100
     arr[l_row:h_row, l_col:h_col] = img
+
+def plot_gc_gaze():
+    candidate_images = [x for x in listdir('data/gc_prepared') if x.endswith('.jpg')]
+
+    arr = create_array(5, 5)
+
+    for i in range(5):
+        for j in range(5):
+            set_image(arr, i, j,
+                      cv2.resize(cv2.imread('data/gc_prepared/{}'.format(choice(candidate_images)), cv2.IMREAD_COLOR),
+                                 dsize=(100, 100)))
+
+    # cv2.imshow('', arr)
+    # cv2.waitKey()
+    cv2.imwrite('images/gc-preview.jpg', arr)
+
+
+def plot_custom():
+    candidate_images = [join('data/custom1_prepared', x) for x in listdir('data/custom1_prepared') if x.endswith('.jpg')] + \
+                       [join('data/custom2_prepared', x) for x in listdir('data/custom2_prepared') if x.endswith('.jpg')]
+
+    arr = create_array(5, 5)
+
+    for i in range(5):
+        for j in range(5):
+            set_image(arr, i, j, cv2.resize(cv2.imread(choice(candidate_images), cv2.IMREAD_COLOR), dsize=(100, 100)))
+
+    # cv2.imshow('', arr)
+    # cv2.waitKey()
+    cv2.imwrite('images/custom-preview.jpg', arr)
+
+
+if __name__ == '__main__':
+    # plot_gc_gaze()
+    plot_custom()
