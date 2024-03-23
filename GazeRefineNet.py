@@ -133,6 +133,11 @@ class EyeNet(nn.Module):
     #Hard coding device dimenions from meta data
     #screen_pixels from meta
     screen_size_mm = [123.8 , 53.7]
+
+
+
+    
+    # *********************
     screen_size_pixels = [568 , 320]
     point_of_gaze_px = mm_to_pixels(point_of_gaze_mm,screen_size_mm, screen_size_pixels) # need to get from screen.json
     pupil_size =self.fc_pupil(features)
@@ -230,12 +235,14 @@ def mm_to_pixels(intersection_mm, screen_size_mm, screen_size_pixels):
 
 def calculate_gaze_origin_direction(z_gd, z1=0, z2=0):
     # Convert points to tensors
-    x1 = 293
-    x2 = 346
-    y1 = 406
-    y2 = 405
-    point1 = torch.tensor([x1, y1, z1], dtype=torch.float32)
-    point2 = torch.tensor([x2, y2, z2], dtype=torch.float32)
+    # x1 = 293
+    # x2 = 346
+    # y1 = 406
+    # y2 = 405
+    # point1 = torch.tensor([x1, y1, z1], dtype=torch.float32)
+    # point2 = torch.tensor([x2, y2, z2], dtype=torch.float32)
+    point1 = torch.tensor([lx1, ly1, z1], dtype=torch.float32)
+    point2 = torch.tensor([lx2, ly2, z2], dtype=torch.float32)
 
     # Calculate the vector pointing from point1 to point2
     direction_vector = point2 - point1
@@ -253,6 +260,8 @@ eyenet= EyeNet()
 image_dir = r'C:\\Users\\Paromita Roy\\OneDrive\\Documents\\Coursework\\Capstone\\SER517_Group35_Capstone\\ProDataset\\train\\images\\cropped_eyes'
 meta_dir = r'C:\\Users\\Paromita Roy\\OneDrive\\Documents\\Coursework\\Capstone\\SER517_Group35_Capstone\\ProDataset\\train\\meta'
 img_tensor = None
+lx1, lx2, ly1, ly2 = 0, 0, 0, 0
+rx1, rx2, ry1, ry2 = 0, 0, 0, 0
 
 def loop_through_directory(image_dir, meta_dir):
     print("looping")
@@ -287,7 +296,16 @@ def process_image_with_metadata(image_path, meta_path):
     img_tensor = preprocess_image(img)
     with open(meta_path, 'r') as meta_file:
         metadata = json.load(meta_file)
-    print(f"Processed {image_path} using {meta_path}")
+        lx1 = metadata['leye_x1']
+        ly1 = metadata['leye_y1']
+        lx2 = metadata['leye_x2']
+        ly2 = metadata['leye_y2']
+        rx1 = metadata['reye_x1']
+        ry1 = metadata['reye_y1']
+        rx2 = metadata['reye_x2']
+        ry2 = metadata['reye_y2']
+    # print("lx", lx1)
+    # print(f"Processed {image_path} using {meta_path}")
 
 loop_through_directory(image_dir, meta_dir)
 
