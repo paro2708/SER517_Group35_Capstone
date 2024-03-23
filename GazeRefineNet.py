@@ -3,8 +3,11 @@ import torch
 from torch import nn
 import numpy as np
 import torch.nn.functional as F
-
-
+from torchvision import transforms
+from PIL import Image
+import torch
+import os
+import json
 import pytorch_lightning as pl
 
 class GRN(pl.LightningModule):
@@ -244,39 +247,62 @@ def calculate_gaze_origin_direction(z_gd, z1=0, z2=0):
 
     return unit_vector
 
-from torchvision import transforms
-from PIL import Image
-import torch
-
-
 eyenet= EyeNet()
 
 # Load and preprocess the image
-image_path = '/content/sample_data/0.jpg'
-preprocess = transforms.Compose([
-    transforms.Resize(224),
-    transforms.CenterCrop(224),
-    transforms.ToTensor(),
-    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-])
+image_dir = r'C:\\Users\\Paromita Roy\\OneDrive\\Documents\\Coursework\\Capstone\\SER517_Group35_Capstone\\ProDataset\\train\\images\\cropped_eyes'
+meta_dir = r'C:\\Users\\Paromita Roy\\OneDrive\\Documents\\Coursework\\Capstone\\SER517_Group35_Capstone\\ProDataset\\train\\meta'
+img_tensor = None
 
-img = Image.open(image_path)
-img_tensor = preprocess(img)  # Add batch dimension
+def loop_through_directory(image_dir, meta_dir):
+    print("looping")
+    for meta_file in os.listdir(meta_dir):
+        if meta_file.endswith('.json'):
+            base_filename = meta_file[:-5]
+            left_eye_filename = f"{base_filename}_left_eye.jpg"
+            right_eye_filename = f"{base_filename}_right_eye.jpg"
+            left_eye_path = os.path.join(image_dir, left_eye_filename)
+            right_eye_path = os.path.join(image_dir, right_eye_filename)
+            meta_path = os.path.join(meta_dir, meta_file)
+            if os.path.exists(left_eye_path):
+                process_image_with_metadata(left_eye_path, meta_path)
+                # print("left eye", left_eye_path)
+            if os.path.exists(right_eye_path):
+                process_image_with_metadata(right_eye_path, meta_path)
+                # print("right eye", right_eye_path)
 
-# # Define a transform to convert the torch tensor to PIL image
-# transform = transforms.ToPILImage()
+def preprocess_image(img):
+    preprocess = transforms.Compose([
+        transforms.Resize(224),
+        transforms.CenterCrop(224),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+    ])
+    print("preprocessed ")
+    return preprocess(img)
 
-# # Apply the transform to the torch tensor
-# image = transform(img_tensor)
+def process_image_with_metadata(image_path, meta_path):
+    global img_tensor
+    img = Image.open(image_path)
+    img_tensor = preprocess_image(img)
+    with open(meta_path, 'r') as meta_file:
+        metadata = json.load(meta_file)
+    print(f"Processed {image_path} using {meta_path}")
 
-# # Save the PIL image to a file
-# image.save("/content/sample_data/image.png")
+loop_through_directory(image_dir, meta_dir)
 
-3
-# print(img_tensor.unsqueeze(0).shape)
 
-# #%debug
-# # Assuming the EyeNet model is already defined and initialized as eyenet
+# image_path = '/content/sample_data/0.jpg'
+# preprocess = transforms.Compose([
+#     transforms.Resize(224),
+#     transforms.CenterCrop(224),
+#     transforms.ToTensor(),
+#     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+# ])
+
+# img = Image.open(image_path)
+# img_tensor = preprocess(img)  # Add batch dimension
+
 gaze_direction, pupil_size, point_of_gaze_px = eyenet(img_tensor.unsqueeze(0))
 
 print("Predicted Gaze Direction:", gaze_direction)
