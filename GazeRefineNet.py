@@ -4,10 +4,11 @@ from torch import nn
 import numpy as np
 import torch.nn.functional as F
 
+
 import pytorch_lightning as pl
 
 class GRN(pl.LightningModule):
-  def __init__(self, data_path, save_path, use_rnn=True):
+  def __init__(self, data_path, save_path):
     super(GRN, self).__init__()
     
     #For training and testing
@@ -63,7 +64,7 @@ class GRN(pl.LightningModule):
 
 #EyeNet model
 class EyeNet(nn.Module):
-  def __init__(self, use_rnn=True):
+  def __init__(self, side='left', use_rnn=True):
     super(EyeNet, self).__init__()
     self.resnet = models.resnet18(
         #block = models.resnet.BasicBlock,
@@ -91,7 +92,7 @@ class EyeNet(nn.Module):
                       nn.Linear(128, 1),
                       nn.ReLU(inplace=True),
                   )  # Output size for pupil size
-    
+
   def forward(self, input_eye_image, rnn_output=None):
 
     features = self.resnet(input_eye_image)
@@ -116,18 +117,25 @@ class EyeNet(nn.Module):
         else:
           rnn_features = GRUResult
           output.append(GRUResult)
-          
+
       features=rnn_features
-      
+
     #to calculate point of gaze
     gaze_direction = (0.5 * np.pi) * self.fc_gaze(features)
     gaze_direction_vector= convert_angles_to_vector(gaze_direction)
+    #x1,y1,x2,y2 need to be taken from meta data files for each eye - side to be given as input to eyenet
+    print(gaze_direction_vector[0][2])
+    origin = calculate_gaze_origin_direction(torch.tensor([0. ,0. ,gaze_direction_vector[0][2]]), z1=0, z2=0)
     point_of_gaze_mm = calculate_intersection_with_screen(origin,gaze_direction_vector)
+    #Hard coding device dimenions from meta data
+    #screen_pixels from meta
+    screen_size_mm = [123.8 , 53.7]
+    screen_size_pixels = [568 , 320]
     point_of_gaze_px = mm_to_pixels(point_of_gaze_mm,screen_size_mm, screen_size_pixels) # need to get from screen.json
     pupil_size =self.fc_pupil(features)
     print("Gaze Direction shape before linear layer:", gaze_direction.shape)
     print("Pupil Size shape before linear layer:", pupil_size.shape)
-    return gaze_direction, pupil_size, point_of_gaze_px
+    return gaze_direction, pupil_size , point_of_gaze_px
 
 #Converting pitch and yaw to a vector - to convert gaze direction to a vector
 
@@ -145,85 +153,135 @@ def convert_angles_to_vector(angles):
         # Raise an error for unsupported input dimensions
         raise ValueError(f'Unexpected input dimensions: {angles.shape}')
 
-# To calculate point of gaze, gaze origin assumed to be 0,0,0      
+def apply_transformation(T, vec):
+    if vec.shape[1] == 2:
+        vec = convert_angles_to_vector(vec)
+    vec = vec.reshape(-1, 3, 1)
+    h_vec = F.pad(vec, pad=(0, 0, 0, 1), value=1.0)
+    if T.size(-2) != 4 or T.size(-1) != 4:
+        raise ValueError("Transformation matrix T must be of shape [4, 4]")
+    return torch.matmul(T, h_vec)[:, :3, 0]
+
+
+def apply_rotation(T, vec):
+    if vec.shape[1] == 2:
+        vec = convert_angles_to_vector(vec)
+    vec = vec.reshape(-1, 3, 1)
+    if T.dim() == 2:
+        T = T.unsqueeze(0)  # Add a batch dimension if it's missing
+    elif T.dim() != 3:
+        raise ValueError("T must be a 2D or 3D tensor")
+    R = T[:, :3, :3]
+    return torch.matmul(R, vec).reshape(-1, 3)
+
+# To calculate point of gaze, gaze origin assumed to be 0,0,0
 def calculate_intersection_with_screen(o, direction):
+
+    # Ensure o and direction are 2D tensors [N, 3]
+    if o.dim() == 1:
+        o = o.unsqueeze(0)  # Add batch dimension if necessary
+    if direction.dim() == 1:
+        direction = direction.unsqueeze(0)  # Add batch dimension if necessary
+
+    rotation = torch.tensor([
+    [0.99970895052,-0.017290327698, 0.0168244000524],
+    [-0.0110340490937,0.292467236519, 0.9562118053443],
+    [-0.0214538034052,-0.956119179726,0.292191326618]
+    ], dtype=torch.float32)
+
+    # Assuming no translation, and the camera is at the origin of the world space
+    camera_transformation_matrix = torch.eye(4)
+    camera_transformation_matrix[:3, :3] = rotation
+    inverse_camera_transformation_matrix = torch.inverse(camera_transformation_matrix)
+
+    # De-rotate gaze vector
+    inv_rotation = torch.inverse(rotation)
+    direction = direction.reshape(-1, 3, 1)
+    direction = torch.matmul(inv_rotation, direction)
+
+    direction = apply_rotation(inverse_camera_transformation_matrix, direction)
+    o = apply_transformation(inverse_camera_transformation_matrix, o)
+
     # Assuming o = (0, 0, 0) for simplicity
     # Solve for t when z = 0
     t = -o[:, 2] / direction[:, 2]
-    
+
     # Calculate intersection point in millimeters
     p_x = o[:, 0] + t * direction[:, 0]
     p_y = o[:, 1] + t * direction[:, 1]
-    
+
     return torch.stack([p_x, p_y], dim=-1)
 
 def mm_to_pixels(intersection_mm, screen_size_mm, screen_size_pixels):
     # Unpack screen dimensions
-    screen_width_mm, screen_height_mm = screen_size_mm
-    screen_width_px, screen_height_px = screen_size_pixels
-    
+    screen_height_mm, screen_width_mm = screen_size_mm
+    screen_height_px, screen_width_px = screen_size_pixels
+
     # Calculate pixels per millimeter
-    ppmm_x = screen_width_px / screen_width_mm
-    ppmm_y = screen_height_px / screen_height_mm
-    
+    ppmm_x = screen_width_px #/ screen_width_mm
+    ppmm_y = screen_height_px #/ screen_height_mm
+
     # Convert intersection point from mm to pixels
     intersection_px = intersection_mm * torch.tensor([ppmm_x, ppmm_y])
     return intersection_px
-  
-  
-#GazeRefineNet model
 
-class GazeRefineNet(nn.Module):
-    def __init__(self, in_shape, out_shape, activation=nn.ReLU):
-        super(GazeRefineNet, self).__init__()
-        # Dynamically set input channels based on configuration
-        in_channels = 4 if config['load_screen_content'] else 1
-        self.do_skip = config['use_skip_connections']
+def calculate_gaze_origin_direction(z_gd, z1=0, z2=0):
+    # Convert points to tensors
+    x1 = 293
+    x2 = 346
+    y1 = 406
+    y2 = 405
+    point1 = torch.tensor([x1, y1, z1], dtype=torch.float32)
+    point2 = torch.tensor([x2, y2, z2], dtype=torch.float32)
 
-        # Define initial convolution layers to process the input image
-        self.initial_conv = nn.Sequential(
-            nn.Conv2d(in_channels, 16, kernel_size=3, padding=1),
-            nn.InstanceNorm2d(16),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(16, 16, kernel_size=3, padding=1),
-            nn.ReLU(inplace=True)
-        )
+    # Calculate the vector pointing from point1 to point2
+    direction_vector = point2 - point1
 
-        # Example of a simplified backbone architecture
-        self.backbone = nn.Sequential(
-            nn.Conv2d(16, 32, kernel_size=3, stride=2, padding=1),
-            nn.ReLU(inplace=True),
-            # Additional layers would be added here...
-        )
+    # Normalize the vector to get a unit vector
+    unit_vector = direction_vector / torch.norm(direction_vector)
 
-        # Final convolution to generate the heatmap
-        self.final_conv = nn.Sequential(
-            nn.Conv2d(32, 1, kernel_size=1),
-            nn.Sigmoid()  # Assuming the output is a heatmap
-        )
+    unit_vector= unit_vector + z_gd
 
-    def forward(self, input_dict):
-        # Example preprocessing step
-        # Assuming input_dict contains 'screen_frame' and 'heatmap_initial'
-        if config['load_screen_content']:
-            input_image = torch.cat([input_dict['screen_frame'], input_dict['heatmap_initial']], dim=1)
-        else:
-            input_image = input_dict['heatmap_initial']
+    return unit_vector
 
-        # Pass through initial convolutions
-        x = self.initial_conv(input_image)
-        # Pass through the backbone
-        x = self.backbone(x)
-        # Generate final heatmap
-        final_heatmap = self.final_conv(x)
+from torchvision import transforms
+from PIL import Image
+import torch
 
-        return final_heatmap
 
-# Need to change configuration accordingly
-config = {
-    'load_screen_content': True,
-    'use_skip_connections': True,
-}
+eyenet= EyeNet()
 
-# Initialize the model
-model = GazeRefineNet(config)
+# Load and preprocess the image
+image_path = '/content/sample_data/0.jpg'
+preprocess = transforms.Compose([
+    transforms.Resize(224),
+    transforms.CenterCrop(224),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+])
+
+img = Image.open(image_path)
+img_tensor = preprocess(img)  # Add batch dimension
+
+# # Define a transform to convert the torch tensor to PIL image
+# transform = transforms.ToPILImage()
+
+# # Apply the transform to the torch tensor
+# image = transform(img_tensor)
+
+# # Save the PIL image to a file
+# image.save("/content/sample_data/image.png")
+
+3
+# print(img_tensor.unsqueeze(0).shape)
+
+# #%debug
+# # Assuming the EyeNet model is already defined and initialized as eyenet
+gaze_direction, pupil_size, point_of_gaze_px = eyenet(img_tensor.unsqueeze(0))
+
+print("Predicted Gaze Direction:", gaze_direction)
+print("Predicted Pupil Size:", pupil_size)
+print("Predicted Point of Gaze:", point_of_gaze_px)
+magnitude = torch.norm(gaze_direction, p=2)
+magnitude = magnitude *(180/np.pi)
+print("Normalized Gaze Direction Magnitude(in radians):", magnitude.item())
