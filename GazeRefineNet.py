@@ -9,6 +9,8 @@ import torch
 import os
 import json
 import pytorch_lightning as pl
+from torch.optim.lr_scheduler import ReduceLROnPlateau
+
 
 class GRN(pl.LightningModule):
   def __init__(self, data_path, save_path):
@@ -24,7 +26,7 @@ class GRN(pl.LightningModule):
     
     #Initializing EyeNet and GazeRefineNet - to be defined in forward
     self.eyeNet = EyeNet() #Initialized the eye model
-    self.gazeRefineNet = gazeRefineNet() #Initialized landmark model
+    # self.gazeRefineNet = gazeRefineNet() #Initialized landmark model
     
   #Need to be refined after the entire model is done
   def forward(self, leftEye, rightEye):
@@ -133,11 +135,6 @@ class EyeNet(nn.Module):
     #Hard coding device dimenions from meta data
     #screen_pixels from meta
     screen_size_mm = [123.8 , 53.7]
-
-
-
-    
-    # *********************
     screen_size_pixels = [568 , 320]
     point_of_gaze_px = mm_to_pixels(point_of_gaze_mm,screen_size_mm, screen_size_pixels) # need to get from screen.json
     pupil_size =self.fc_pupil(features)
@@ -304,28 +301,24 @@ def process_image_with_metadata(image_path, meta_path):
         ry1 = metadata['reye_y1']
         rx2 = metadata['reye_x2']
         ry2 = metadata['reye_y2']
+        gaze_direction, pupil_size, point_of_gaze_px = eyenet(img_tensor.unsqueeze(0))
+
+        print("Predicted Gaze Direction:", gaze_direction)
+        print("Predicted Pupil Size:", pupil_size)
+        print("Predicted Point of Gaze:", point_of_gaze_px)
+        magnitude = torch.norm(gaze_direction, p=2)
+        magnitude = magnitude *(180/np.pi)
+        print("Normalized Gaze Direction Magnitude(in radians):", magnitude.item())
     # print("lx", lx1)
     # print(f"Processed {image_path} using {meta_path}")
 
 loop_through_directory(image_dir, meta_dir)
 
+# gaze_direction, pupil_size, point_of_gaze_px = eyenet(img_tensor.unsqueeze(0))
 
-# image_path = '/content/sample_data/0.jpg'
-# preprocess = transforms.Compose([
-#     transforms.Resize(224),
-#     transforms.CenterCrop(224),
-#     transforms.ToTensor(),
-#     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-# ])
-
-# img = Image.open(image_path)
-# img_tensor = preprocess(img)  # Add batch dimension
-
-gaze_direction, pupil_size, point_of_gaze_px = eyenet(img_tensor.unsqueeze(0))
-
-print("Predicted Gaze Direction:", gaze_direction)
-print("Predicted Pupil Size:", pupil_size)
-print("Predicted Point of Gaze:", point_of_gaze_px)
-magnitude = torch.norm(gaze_direction, p=2)
-magnitude = magnitude *(180/np.pi)
-print("Normalized Gaze Direction Magnitude(in radians):", magnitude.item())
+# print("Predicted Gaze Direction:", gaze_direction)
+# print("Predicted Pupil Size:", pupil_size)
+# print("Predicted Point of Gaze:", point_of_gaze_px)
+# magnitude = torch.norm(gaze_direction, p=2)
+# magnitude = magnitude *(180/np.pi)
+# print("Normalized Gaze Direction Magnitude(in radians):", magnitude.item())
