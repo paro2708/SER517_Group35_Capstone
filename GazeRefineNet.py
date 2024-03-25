@@ -332,7 +332,7 @@ def process_image_with_metadata(image_path, meta_path):
     # print("lx", lx1)
     # print(f"Processed {image_path} using {meta_path}")
 
-loop_through_directory(image_dir, meta_dir)
+loop_through_directory(image_dir, meta_dir, output_json_path)
 
 # gaze_direction, pupil_size, point_of_gaze_px = eyenet(img_tensor.unsqueeze(0))
 
