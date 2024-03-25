@@ -260,7 +260,10 @@ img_tensor = None
 lx1, lx2, ly1, ly2 = 0, 0, 0, 0
 rx1, rx2, ry1, ry2 = 0, 0, 0, 0
 
-def loop_through_directory(image_dir, meta_dir):
+output_json_path = r'C:\\Users\\Paromita Roy\\OneDrive\\Documents\\Coursework\\Capstone\\SER517_Group35_Capstone\\ProDataset\\train\\output'
+
+def loop_through_directory(image_dir, meta_dir, output_json_path):
+    results_list = []
     print("looping")
     for meta_file in os.listdir(meta_dir):
         if meta_file.endswith('.json'):
@@ -271,11 +274,19 @@ def loop_through_directory(image_dir, meta_dir):
             right_eye_path = os.path.join(image_dir, right_eye_filename)
             meta_path = os.path.join(meta_dir, meta_file)
             if os.path.exists(left_eye_path):
-                process_image_with_metadata(left_eye_path, meta_path)
-                # print("left eye", left_eye_path)
+                results = process_image_with_metadata(left_eye_path, meta_path)
+                results_list.append(results)
             if os.path.exists(right_eye_path):
-                process_image_with_metadata(right_eye_path, meta_path)
-                # print("right eye", right_eye_path)
+                results = process_image_with_metadata(right_eye_path, meta_path)
+                results_list.append(results)
+            # if os.path.exists(left_eye_path):
+            #     process_image_with_metadata(left_eye_path, meta_path)
+            #     # print("left eye", left_eye_path)
+            # if os.path.exists(right_eye_path):
+            #     process_image_with_metadata(right_eye_path, meta_path)
+            #     # print("right eye", right_eye_path)
+    with open(output_json_path, 'w') as json_file:
+        json.dump(results_list, json_file, indent=4)
 
 def preprocess_image(img):
     preprocess = transforms.Compose([
@@ -288,6 +299,7 @@ def preprocess_image(img):
     return preprocess(img)
 
 def process_image_with_metadata(image_path, meta_path):
+    results = {}
     global img_tensor
     img = Image.open(image_path)
     img_tensor = preprocess_image(img)
@@ -309,6 +321,14 @@ def process_image_with_metadata(image_path, meta_path):
         magnitude = torch.norm(gaze_direction, p=2)
         magnitude = magnitude *(180/np.pi)
         print("Normalized Gaze Direction Magnitude(in radians):", magnitude.item())
+
+        results['image_path'] = image_path
+        results['gaze_direction'] = gaze_direction.tolist()
+        results['pupil_size'] = pupil_size.item()
+        results['point_of_gaze'] = point_of_gaze_px.tolist()
+        results['magnitude'] = magnitude.item()
+    
+    return results
     # print("lx", lx1)
     # print(f"Processed {image_path} using {meta_path}")
 
