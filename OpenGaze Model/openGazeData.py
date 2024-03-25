@@ -11,15 +11,19 @@ import matplotlib.pyplot as plt
 class openGazeData(Dataset):
     def __init__(self, root, phase='train', size = (128,128), transform=True):
         self.root = root
-        print("Root = ", root)
-        self.files = glob(root+"/images/*.jpg")
+        print("Root = ", root+"*.jpg")
+        if(phase=='test'):
+            self.files = glob(root+"*.jpg")
+        else:
+            self.files = glob(root+"/images/*.jpg")
+
 
         self.phase = phase
         self.size = size
 
         self.aug = self.get_transform(self.phase, self.size)
         self.transform = transform
-
+        print(str(len(self.files)))
         print("Num Files for " + phase + " = " + str(len(self.files)))
     
     def __getitem__(self,idx):
@@ -52,29 +56,31 @@ class openGazeData(Dataset):
         # plt.axis('off')  # Turn off axis numbers and ticks
         # plt.show()
         kps = torch.tensor(kps).float()
-        l_eye_w, l_eye_h = l_eye.size
-        r_eye_w, r_eye_h = r_eye.size
+        # l_eye_w, l_eye_h = l_eye.size
+        # r_eye_w, r_eye_h = r_eye.size
 
-        # Extract left and right eye keypoint pixel coordinates
-        l_kps = [kps[0].item() * l_eye_w, kps[1].item() * l_eye_h, kps[2].item() * l_eye_w, kps[3].item() * l_eye_h]
-        r_kps = [kps[4].item() * r_eye_w, kps[5].item() * r_eye_h, kps[6].item() * r_eye_w, kps[7].item() * r_eye_h]
+        # # Extract left and right eye keypoint pixel coordinates
+        # l_kps = [kps[0].item() * l_eye_w, kps[1].item() * l_eye_h, kps[2].item() * l_eye_w, kps[3].item() * l_eye_h]
+        # r_kps = [kps[4].item() * r_eye_w, kps[5].item() * r_eye_h, kps[6].item() * r_eye_w, kps[7].item() * r_eye_h]
 
-        # Display images with keypoints
-        fig, ax = plt.subplots(1, 2, figsize=(10, 5))
+        # # Display images with keypoints
+        # fig, ax = plt.subplots(1, 2, figsize=(10, 5))
 
-        # Left eye and keypoints
-        ax[0].imshow(l_eye)
-        ax[0].scatter([l_kps[0], l_kps[2]], [l_kps[1], l_kps[3]], color='red')  # Assuming l_kps[0] and l_kps[2] are x coordinates, l_kps[1] and l_kps[3] are y
-        ax[0].set_title('Left Eye with Keypoints')
-        ax[0].axis('off')
+        # # Left eye and keypoints
+        # ax[0].imshow(l_eye)
+        # ax[0].scatter([l_kps[0], l_kps[2]], [l_kps[1], l_kps[3]], color='red')  # Assuming l_kps[0] and l_kps[2] are x coordinates, l_kps[1] and l_kps[3] are y
+        # ax[0].set_title('Left Eye with Keypoints')
+        # ax[0].axis('off')
 
-        # Right eye and keypoints
-        ax[1].imshow(r_eye)
-        ax[1].scatter([r_kps[0], r_kps[2]], [r_kps[1], r_kps[3]], color='red')  # Same assumption for r_kps
-        ax[1].set_title('Right Eye with Keypoints')
-        ax[1].axis('off')
+        # # Right eye and keypoints
+        # ax[1].imshow(r_eye)
+        # ax[1].scatter([r_kps[0], r_kps[2]], [r_kps[1], r_kps[3]], color='red')  # Same assumption for r_kps
+        # ax[1].set_title('Right Eye with Keypoints')
+        # ax[1].axis('off')
 
-        plt.show()
+        # #plt.show()
+
+
         out = torch.tensor([meta['dot_xcam'], meta['dot_y_cam']]).float()
         
         l_eye = self.aug(l_eye)

@@ -17,7 +17,7 @@ class openGaze(pl.LightningModule):
         self.learningRate = 0.016
         self.batch_size = 256
         self.data_path = data_path
-        self.workers = 1
+        self.workers = 7
         print("Data Path: ", data_path)
         self.save_path = save_path
     
@@ -57,13 +57,13 @@ class openGaze(pl.LightningModule):
     def train_dataloader(self):
         train_dataset = openGazeData(self.data_path+"/train/", phase='train')
         print(self.data_path+ "/train/")
-        train_loader = DataLoader(train_dataset, batch_size=self.batch_size, num_workers=self.workers, shuffle=True)
+        train_loader = DataLoader(train_dataset, batch_size=self.batch_size, num_workers=self.workers, shuffle=True, persistent_workers=True)
         print('Num_train_files', len(train_dataset))
         return train_loader
     
     def val_dataloader(self):
         dataVal = openGazeData(self.data_path+"/val/", phase='val')
-        val_loader = DataLoader(dataVal, batch_size=self.batch_size, num_workers=self.workers, shuffle=False)
+        val_loader = DataLoader(dataVal, batch_size=self.batch_size, num_workers=self.workers, shuffle=False, persistent_workers=True)
         print('Num_val_files', len(dataVal))
         self.logger.log_hyperparams({'Num_val_files': len(dataVal)})
 
