@@ -131,7 +131,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    train_dataset, valid_dataset, test_dataset = get_mpii_datasets()
+    train_dataset, valid_dataset, test_dataset = get_gc_datasets()
 
     params = {
         'learning_rate': 0.001,
