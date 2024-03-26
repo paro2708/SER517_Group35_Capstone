@@ -45,9 +45,9 @@ class GRN(pl.LightningModule):
     print("Data Path: ", data_path)
     self.save_path = save_path
     # self.image_dir = r'C:\\Rushi\\ProDataset\\train\\images\\iPhone 5S\\cropped_eyes'
-    self.image_dir = r'C:\Users\rpatil29\ProDataset\train\iPhone 5S\cropped_eyes'
+    self.image_dir = r'E:\ProDataset\train\images\iPhone 5S\cropped_eyes'
     # self.meta_dir = r'C:\\Rushi\\ProDataset\\train\\meta'
-    self.meta_dir = r'C:\Users\rpatil29\ProDataset\train\meta'
+    self.meta_dir = r'E:\ProDataset\train\meta'
     
     #Initializing EyeNet and GazeRefineNet - to be defined in forward
     # self.eyeNet_r = EyeNet() #Initialized the eye model
@@ -70,24 +70,25 @@ class GRN(pl.LightningModule):
         # print("initial heatmap from forward", initial_heatmap)
         
         # grn_final_PoG, grn_final_heatmap = self.gazeRefineNet(initial_heatmap) 
-        grn_final_PoG = self.gazeRefineNet(img_tensor_l, lx, ly, img_tensor_r, rx, ry)
+        average_gaze_direction, grn_final_PoG = self.gazeRefineNet(img_tensor_l, lx, ly, img_tensor_r, rx, ry)
         print("return forward grn")
-        return grn_final_PoG
+        # return grn_final_PoG
+        return average_gaze_direction
     
   #Need to be refined later
   def training_step(self, batch, batch_idx):
         # _, kps, out, screen_w, screen_h, lx1, lx2, ly1, ly2, rx1, rx2, ry1, ry2, dot_px, device, img_tensor_l, img_tensor_r = batch
         _, kps, out, screen_w, screen_h, lx, ly, rx, ry, dot_px, device, img_tensor_l, img_tensor_r = batch
         grn_out = self.forward(screen_w, screen_h, lx, ly, rx, ry, dot_px, device, img_tensor_l, img_tensor_r)
-        grn_out_tensor = torch.tensor([grn_out], dtype=torch.float32)
+        # grn_out_tensor = torch.tensor([grn_out], dtype=torch.float32)
         # dot_px_tensor = torch.stack(dot_px).float()
         # grn_out.requires_grad_(True)
         print("grn_out",grn_out)
-        print("grn_out_tensor",grn_out_tensor)
+        # print("grn_out_tensor",grn_out_tensor)
         print("dot_px",dot_px)
         # output = self.model(inputs, target)
-        # loss = F.mse_loss(grn_out_tensor, dot_px)
-        loss=torch.tensor(3.24).float()
+        loss = F.mse_loss(grn_out, out)
+        # loss=torch.tensor(3.24).float()
         print('train_loss', loss)
         self.log('train_loss', loss, on_step=True, on_epoch=True)
         return loss
@@ -516,6 +517,8 @@ class GazeRefineNet(nn.Module):
         
         gaze_direction_r, pupil_size_r, point_of_gaze_px_r = self.eyeNet_r( img_tensor_r, rx, ry)
 
+        average_gaze_direction = (gaze_direction_l + gaze_direction_r) /2
+
 
         average_pog = average_point_of_gaze(point_of_gaze_px_r, point_of_gaze_px_l)
 
@@ -550,7 +553,7 @@ class GazeRefineNet(nn.Module):
 
         
 
-        return PoG_GRN
+        return average_gaze_direction, PoG_GRN
 
 # Need to change configuration accordingly
 config = {
