@@ -23,13 +23,14 @@ if __name__ == '__main__':
     gc_metadata_fullname = join(gc_dir_prepared, 'metadata.csv')
     error_count = 0
     with open(gc_metadata_fullname, 'w') as f:
-        f.write('imagename,x,y\n')
+        print(f.write('imagename,x,y\n'))
         for participant_dir in listdir(gc_dir):
             participant_dir_fullname = join(gc_dir, participant_dir)
             if not isdir(participant_dir_fullname):
                 continue
             screen_w, screen_h = get_participant_screen_size(participant_dir_fullname)
             labels_fullname = join(participant_dir_fullname, '{}.txt'.format(participant_dir))
+            print("in the loop 1")
             with open(labels_fullname) as flabel:
                 for line in flabel:
                     # noinspection PyRedeclaration

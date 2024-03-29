@@ -16,13 +16,13 @@ def load_gc_dataframes():
     return df_train, df_valid, df_test
 
 
-def load_custom_dataframes(n, split_index, shuffle=False):
-    df = pd.read_csv('data/custom{}_prepared/metadata.csv'.format(n))
-    if shuffle:
-        df = df.sample(frac=1)
-    df_train = df[:split_index]
-    df_valid = df[split_index:]
-    return df_train, df_valid
+#def load_custom_dataframes(n, split_index, shuffle=False):
+ #   df = pd.read_csv('data/custom{}_prepared/metadata.csv'.format(n))
+  #  if shuffle:
+   #     df = df.sample(frac=1)
+    #df_train = df[:split_index]
+    #df_valid = df[split_index:]
+    #return df_train, df_valid
 
 
 def decorate_dataset(dataset):
@@ -46,8 +46,8 @@ def get_gc_datasets():
     return train_dataset, valid_dataset, test_dataset
 
 
-def get_custom_datasets(n, split_index, shuffle=False):
-    df_train, df_valid = load_custom_dataframes(n=n, split_index=split_index, shuffle=shuffle)
-    train_dataset = decorate_dataset(GazeCaptureDataset(df_train))
-    valid_dataset = decorate_dataset(GazeCaptureDataset(df_valid))
-    return train_dataset, valid_dataset
+#def get_custom_datasets(n, split_index, shuffle=False):
+ #   df_train, df_valid = load_custom_dataframes(n=n, split_index=split_index, shuffle=shuffle)
+  #  train_dataset = decorate_dataset(GazeCaptureDataset(df_train))
+   # valid_dataset = decorate_dataset(GazeCaptureDataset(df_valid))
+    #return train_dataset, valid_dataset
