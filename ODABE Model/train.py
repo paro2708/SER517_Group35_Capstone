@@ -9,7 +9,7 @@ import cv2
 from torch.optim import SGD
 from torch.utils.data import DataLoader
 
-from data_load import get_gc_datasets, get_custom_datasets
+from data_load import get_gc_datasets #, get_custom_datasets
 from model_vgg import NetVgg
 
 device = torch.device('cuda')
@@ -40,9 +40,9 @@ def plot_and_save_debug_image(i, face_crop, x_true, y_true, x_pred, y_pred, loss
 
 def forward_backward_gen(model, loader):
     for i, (x, x_true, y_true) in enumerate(loader):
-        x = x.to(device)
-        x_true = x_true.to(device)
-        y_true = y_true.to(device)
+        #x = x.to(device)
+        #x_true = x_true.to(device)
+        #y_true = y_true.to(device)
 
         x_pred, y_pred = model(x)
 
@@ -103,12 +103,12 @@ def train(model, parameters, train_dataset, valid_dataset, params, threshold_los
     return losses_batch, loss_train_all, loss_valid_all
 
 def create_or_load_model():
-    weights = listdir('weights')
-    if len(weights) > 1:
-        weights_filename, *_ = sorted(weights, reverse=True)
-        loss = float(weights_filename.split('-')[1])
-        with open('weights/{}'.format(weights_filename), 'rb') as f:
-            return torch.load(f), loss
+#    weights = listdir('weights')
+#    if len(weights) > 1:
+#        weights_filename, *_ = sorted(weights, reverse=True)
+#        loss = float(weights_filename.split('-')[1])
+#        with open('weights/{}'.format(weights_filename), 'rb') as f:
+#            return torch.load(f), loss
     return NetVgg(), None
 
 
@@ -135,7 +135,7 @@ if __name__ == '__main__':
 
     params = {
         'learning_rate': 0.001,
-        'epochs': 4,
+        'epochs': 10,
         'batch_size': 8
     }
 
@@ -143,17 +143,17 @@ if __name__ == '__main__':
 
     print(model)
 
-    model = model.to(device)
+    #model = model.to(device)
     if test_loss is None:
         losses_batch, loss_train_all, loss_valid_all = train(model, model.parameters(), train_dataset, valid_dataset, params=params)
 
         print('loss_train_all: {}'.format(loss_train_all))
         print('loss_valid_all: {}'.format(loss_valid_all))
         print('losses_batch: {}', losses_batch)
-        # plt.plot(range(len(loss_train_all)), loss_train_all, label='train')
-        # plt.plot(range(len(loss_valid_all)), loss_valid_all, label='valid')
-        # plt.legend()
-        # plt.show()
+        plt.plot(range(len(loss_train_all)), loss_train_all, label='train')
+        plt.plot(range(len(loss_valid_all)), loss_valid_all, label='valid')
+        plt.legend()
+        plt.show()
 
         test_loss = evaluate(model, test_dataset, params)
 
@@ -164,28 +164,28 @@ if __name__ == '__main__':
 
         params['learning_rate'] /= 8
 
-        stage1_train_dataset, stage_1_valid_dataset = get_custom_datasets(1, split_index=400, shuffle=True)
-        stage2_train_dataset, stage_2_valid_dataset = get_custom_datasets(2, split_index=400, shuffle=True)
+#        stage1_train_dataset, stage_1_valid_dataset = get_custom_datasets(1, split_index=400, shuffle=True)
+#        stage2_train_dataset, stage_2_valid_dataset = get_custom_datasets(2, split_index=400, shuffle=True)
 
-        print('stage1_offline')
-        stage1_offline = fine_tune_stage(model, stage1_train_dataset, stage_1_valid_dataset, params, threshold_loss=test_loss, backprop=False)
-        print('stage2_offline')
-        stage2_offline = fine_tune_stage(model, stage2_train_dataset, stage_2_valid_dataset, params, threshold_loss=test_loss, backprop=False)
+#        print('stage1_offline')
+#        stage1_offline = fine_tune_stage(model, stage1_train_dataset, stage_1_valid_dataset, params, threshold_loss=test_loss, backprop=False)
+#        print('stage2_offline')
+#        stage2_offline = fine_tune_stage(model, stage2_train_dataset, stage_2_valid_dataset, params, threshold_loss=test_loss, backprop=False)
 
-        print('stage1_online')
-        stage1_online = fine_tune_stage(model, stage1_train_dataset, stage_1_valid_dataset, params, threshold_loss=test_loss)
-        print('stage2_online')
-        stage2_online = fine_tune_stage(model, stage2_train_dataset, stage_2_valid_dataset, params, threshold_loss=test_loss)
+#        print('stage1_online')
+#        stage1_online = fine_tune_stage(model, stage1_train_dataset, stage_1_valid_dataset, params, threshold_loss=test_loss)
+#        print('stage2_online')
+#        stage2_online = fine_tune_stage(model, stage2_train_dataset, stage_2_valid_dataset, params, threshold_loss=test_loss)
 
         from charts import plot_smooth
         with open('data-charts/losses_batch', 'wb') as f:
             pickle.dump(losses_batch, f)
-        with open('data-charts/stage1_online', 'wb') as f:
-            pickle.dump(stage1_online, f)
-        with open('data-charts/stage2_online', 'wb') as f:
-            pickle.dump(stage2_online, f)
-        with open('data-charts/stage1_offline', 'wb') as f:
-            pickle.dump(stage1_offline, f)
-        with open('data-charts/stage2_offline', 'wb') as f:
-            pickle.dump(stage2_offline, f)
+#        with open('data-charts/stage1_online', 'wb') as f:
+#            pickle.dump(stage1_online, f)
+#        with open('data-charts/stage2_online', 'wb') as f:
+#            pickle.dump(stage2_online, f)
+#        with open('data-charts/stage1_offline', 'wb') as f:
+#            pickle.dump(stage1_offline, f)
+#        with open('data-charts/stage2_offline', 'wb') as f:
+#            pickle.dump(stage2_offline, f)
         # plot_smooth(losses_batch, stage1_online, stage2_online)
