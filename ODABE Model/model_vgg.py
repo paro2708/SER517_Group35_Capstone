@@ -1,14 +1,20 @@
 import math
 
 import torch.nn as nn
-from torchvision.models.vgg import make_layers, cfg
+from torchvision.models.vgg import make_layers
 
 
 class NetVgg(nn.Module):
 
     def __init__(self):
         super().__init__()
-        self.extractor = make_layers(cfg=cfg['A'], batch_norm=True)
+        cfg = {
+            'A': [64, 'M', 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
+            'B': [64, 64, 'M', 128, 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
+            'D': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'M', 512, 512, 512, 'M', 512, 512, 512, 'M'],
+            'E': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 256, 'M', 512, 512, 512, 512, 'M', 512, 512, 512, 512, 'M'],
+        }
+        self.extractor = make_layers(cfg['A'], batch_norm=True)
         self.regressor = nn.Sequential(
             nn.Linear(25088, 4096),
             nn.ReLU(True),
