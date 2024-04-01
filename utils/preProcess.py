@@ -8,6 +8,13 @@ Frames from MIT Dataset, split in train/test.
 Create a metadata for each image 
 '''
 
+device_dimensions = {
+    'iPhone12': {'width': 750, 'height': 1334},
+    'GalaxyS21': {'width': 1080, 'height': 2400},
+    
+    # Add other devices
+}
+
 def convert_dataset(files,out_root):
     for i in files:
         with open(i+"/info.json") as f:
@@ -37,6 +44,14 @@ def convert_dataset(files,out_root):
             # Prepare metadata for the current frame. 
             meta = {}
             meta['device'] = device
+            # Look up device dimensions based on the device name
+            if device in device_dimensions:
+                meta['device_w'] = device_dimensions[device]['width']
+                meta['device_h'] = device_dimensions[device]['height']
+            else:
+                # Default dimensions or a method to handle unknown devices
+                meta['device_w'] = 0 
+                meta['device_h'] = 0 
             meta['screen_h'], meta['screen_w'] = screen_info["H"][frame_idx], screen_info["W"][frame_idx]
             meta['face_valid'] = face_det["IsValid"][frame_idx]
             meta['face_x'], meta['face_y'], meta['face_w'], meta['face_h'] = round(face_det['X'][frame_idx]), round(face_det['Y'][frame_idx]), round(face_det['W'][frame_idx]), round(face_det['H'][frame_idx])
