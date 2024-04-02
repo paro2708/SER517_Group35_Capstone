@@ -10,6 +10,24 @@ from tqdm import tqdm
 Add eye landmarks to the MIT Gaze Capture Dataset using DLib
 '''
 
+device_dimensions = {
+    'iPhone 6': {'width_pix': 750, 'height_pix': 1334, 'width_mm': 67.0, 'height_mm': 138.1},
+    'iPhone 6s Plus': {'width_pix': 1080, 'height_pix': 1920, 'width_mm': 77.9, 'height_mm': 158.2},
+    'iPhone 5S': {'width_pix': 640, 'height_pix': 1136, 'width_mm': 58.6, 'height_mm': 123.8},
+    'iPad Mini': {'width_pix': 768, 'height_pix': 1024, 'width_mm': 134.8, 'height_mm': 200.0}, # Assuming iPad Mini 1st gen
+    'iPhone 4S': {'width_pix': 640, 'height_pix': 960, 'width_mm': 58.6, 'height_mm': 115.2},
+    'iPhone 5C': {'width_pix': 640, 'height_pix': 1136, 'width_mm': 59.2, 'height_mm': 124.4},
+    'iPad Air 2': {'width_pix': 1536, 'height_pix': 2048, 'width_mm': 169.5, 'height_mm': 240.0},
+    'iPhone 6s': {'width_pix': 750, 'height_pix': 1334, 'width_mm': 67.1, 'height_mm': 138.3},
+    'iPad Pro 12.9"': {'width_pix': 2048, 'height_pix': 2732, 'width_mm': 220.6, 'height_mm': 305.7},
+    'iPhone 6 Plus': {'width_pix': 1080, 'height_pix': 1920, 'width_mm': 77.8, 'height_mm': 158.1},
+    'iPad 4': {'width_pix': 1536, 'height_pix': 2048, 'width_mm': 185.7, 'height_mm': 241.2},
+    'iPhone 5': {'width_pix': 640, 'height_pix': 1136, 'width_mm': 58.6, 'height_mm': 123.8},
+    'iPad Air': {'width_pix': 1536, 'height_pix': 2048, 'width_mm': 169.5, 'height_mm': 240.0},
+    'iPad 2': {'width_pix': 768, 'height_pix': 1024, 'width_mm': 185.7, 'height_mm': 241.2},
+}
+
+
 def in_box(box, point):
     x1, y1, w, h = box
     x2, y2 = x1+w, y1+h
@@ -31,6 +49,24 @@ def add_kps(files, p):
         img = cv2.imread(i)
         bw_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         meta = json.load(open(i.replace('images', 'meta').replace('.jpg', '.json')))
+
+        meta_file_path = i.replace('images', 'meta').replace('.jpg', '.json')
+        with open(meta_file_path, 'r') as meta_file:
+            meta = json.load(meta_file)
+        
+        device = meta['device']
+        # Update metadata with device dimensions if the device is known
+        if device in device_dimensions:
+            meta.update({
+                'device_width_pix': device_dimensions[device]['width_pix'],
+                'device_height_pix': device_dimensions[device]['height_pix'],
+                'device_width_mm': device_dimensions[device]['width_mm'],
+                'device_height_mm': device_dimensions[device]['height_mm']
+            })
+        else:
+            # Handle unknown device case, maybe log it or use default dimensions
+            print(f"Unknown device: {device}")
+            
         leye_x, leye_y, leye_w, leye_h = meta['leye_x'], meta['leye_y'], meta['leye_w'], meta['leye_h']
         reye_x, reye_y, reye_w, reye_h = meta['reye_x'], meta['reye_y'], meta['reye_w'], meta['reye_h']
         if(meta['face_valid']):
