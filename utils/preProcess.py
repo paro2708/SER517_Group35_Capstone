@@ -28,9 +28,11 @@ def convert_dataset(files,out_root):
         l_eye_det = json.load(open(i+'/appleLeftEye.json'))
         r_eye_det = json.load(open(i+'/appleRightEye.json'))
         dot = json.load(open(i+'/dotInfo.json'))
+        motion = json.load(open(i+'/motion.json'))
         
         # Determine frames where the device is in portrait orientation and both eyes are detected.
 
+        attitude_rotation_matrix = motion[0]['AttitudeRotationMatrix'] if 'AttitudeRotationMatrix' in motion[0] else None
         portrait_orientation = np.asarray(screen_info["Orientation"])==1
         l_eye_valid, r_eye_valid = np.array(l_eye_det['IsValid']), np.array(r_eye_det['IsValid'])
         valid_ids = l_eye_valid*r_eye_valid*portrait_orientation
@@ -61,6 +63,10 @@ def convert_dataset(files,out_root):
             meta['dot_xcam'], meta['dot_y_cam'] = dot['XCam'][frame_idx], dot['YCam'][frame_idx]
             meta['dot_x_pix'], meta['dot_y_pix'] = dot['XPts'][frame_idx], dot['YPts'][frame_idx]
             
+            # Add the first AttitudeRotationMatrix to the metadata
+            if attitude_rotation_matrix:
+                meta['attitude_rotation_matrix'] = attitude_rotation_matrix
+
             os.makedirs(out_dir+'/meta/', exist_ok=True)
             meta_file = out_dir+'/meta/'+expt_name+'__'+fname+'.json'
             with open(meta_file, 'w') as outfile:
