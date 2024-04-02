@@ -4,20 +4,16 @@ from torch import nn
 import numpy as np
 import torch.nn.functional as F
 from torchvision import transforms
-from PIL import Image
-import torch
 import os
 import json
 import pytorch_lightning as pl
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 import scipy.ndimage
-import matplotlib.pyplot as plt
 
 from torch.utils.data import DataLoader
 
 import torch.nn as nn
-import torch.nn.functional as F
 
 from openGazeData import openGazeData
 
@@ -49,46 +45,20 @@ class GRN(pl.LightningModule):
     # self.meta_dir = r'C:\\Rushi\\ProDataset\\train\\meta'
     self.meta_dir = r'E:\ProDataset\train\meta'
     
-    #Initializing EyeNet and GazeRefineNet - to be defined in forward
-    # self.eyeNet_r = EyeNet() #Initialized the eye model
-    # self.eyeNet_l = EyeNet() #Initialized the eye model
-    
+        
     self.gazeRefineNet = GazeRefineNet() #Initialized landmark model
     
-  #Need to be refined after the entire model is done
+ 
   def forward(self, screen_w, screen_h, lx, ly, rx, ry, dot_px, device, img_tensor_l, img_tensor_r, initial_heatmap=None):
-        print("forward grn")
-        # gaze_direction_l, pupil_size_l, point_of_gaze_px_l = self.eyeNet_l( img_tensor_l, lx, ly) # need to add screen width and height
-        
-        # gaze_direction_r, pupil_size_r, point_of_gaze_px_r = self.eyeNet_r( img_tensor_r, rx, ry)
-
-        # average_pog = average_point_of_gaze(point_of_gaze_px_r, point_of_gaze_px_l)
-
-        # initial_heatmap = generate_heatmap(screen_size_pixels_heatmap, average_pog, sigma)
-        # initial_heatmap = torch.tensor(initial_heatmap, dtype=torch.float32).unsqueeze(0)
-
-        # print("initial heatmap from forward", initial_heatmap)
-        
-        # grn_final_PoG, grn_final_heatmap = self.gazeRefineNet(initial_heatmap) 
         average_gaze_direction, grn_final_PoG = self.gazeRefineNet(img_tensor_l, lx, ly, img_tensor_r, rx, ry)
         print("return forward grn")
         # return grn_final_PoG
         return average_gaze_direction
     
-  #Need to be refined later
   def training_step(self, batch, batch_idx):
-        # _, kps, out, screen_w, screen_h, lx1, lx2, ly1, ly2, rx1, rx2, ry1, ry2, dot_px, device, img_tensor_l, img_tensor_r = batch
         _, kps, out, screen_w, screen_h, lx, ly, rx, ry, dot_px, device, img_tensor_l, img_tensor_r = batch
         grn_out = self.forward(screen_w, screen_h, lx, ly, rx, ry, dot_px, device, img_tensor_l, img_tensor_r)
-        # grn_out_tensor = torch.tensor([grn_out], dtype=torch.float32)
-        # dot_px_tensor = torch.stack(dot_px).float()
-        # grn_out.requires_grad_(True)
-        print("grn_out",grn_out)
-        # print("grn_out_tensor",grn_out_tensor)
-        print("dot_px",dot_px)
-        # output = self.model(inputs, target)
         loss = F.mse_loss(grn_out, out)
-        # loss=torch.tensor(3.24).float()
         print('train_loss', loss)
         self.log('train_loss', loss, on_step=True, on_epoch=True)
         return loss
@@ -138,7 +108,6 @@ class EyeNet(nn.Module):
     # Optional recurrent component - GRUCell
     if use_rnn:
             self.rnn = nn.GRUCell(input_size=128, hidden_size=128)
-            #self.fc_gaze = nn.Linear(128, 3)  # Output size for gaze direction
 
     self.fc_gaze = nn.Sequential(
                     nn.Linear(128, 128),
@@ -154,8 +123,6 @@ class EyeNet(nn.Module):
                   )  # Output size for pupil size
 
   def forward(self, img_tensor, x, y, rnn_output=None):
-
-    print("Inside eyenet forward")
 
     features = self.resnet(img_tensor)
 
@@ -184,27 +151,14 @@ class EyeNet(nn.Module):
 
     #to calculate point of gaze
     gaze_direction = (0.5 * np.pi) * self.fc_gaze(features)
-    print("GD  ", gaze_direction)
     gaze_direction_vector= convert_angles_to_vector(gaze_direction)
-    print("GD vector ", gaze_direction_vector)
-    #x1,y1,x2,y2 need to be taken from meta data files for each eye - side to be given as input to eyenet
-    print(gaze_direction_vector[0][2])
-    # origin = calculate_gaze_origin_direction(x1,x2,y1,y2,torch.tensor([0. ,0. ,gaze_direction_vector[0][2]]), z1=0, z2=0)
     origin = calculate_gaze_origin_direction(x,y,torch.tensor([0. ,0. ,gaze_direction_vector[0][2]]), z1=0, z2=0)
-    # print('IMP origin', origin )
     point_of_gaze_mm = calculate_intersection_with_screen(origin,gaze_direction_vector)
-    print('PoG mm', point_of_gaze_mm)
-    #Hard coding device dimenions from meta data
-    #screen_pixels from meta
-    
-    point_of_gaze_px = mm_to_pixels(point_of_gaze_mm,screen_size_mm, screen_size_pixels) # need to get from screen.json
+    point_of_gaze_px = mm_to_pixels(point_of_gaze_mm,screen_size_mm, screen_size_pixels)
     pupil_size =self.fc_pupil(features)
-    print("Gaze Direction shape before linear layer:", gaze_direction.shape)
-    print("Pupil Size shape before linear layer:", pupil_size.shape)
     return gaze_direction, pupil_size , point_of_gaze_px
 
 #Converting pitch and yaw to a vector - to convert gaze direction to a vector
-
 def convert_angles_to_vector(angles):
     # Check if the input angles are 2-dimensional (pitch and yaw)
     if angles.shape[1] == 2:
@@ -248,9 +202,9 @@ def calculate_intersection_with_screen(o, direction):
         o = o.unsqueeze(0)  # Add batch dimension if necessary
     if direction.dim() == 1:
         direction = direction.unsqueeze(0)  # Add batch dimension if necessary
-        
-    # print('IMP o', o )
-
+    
+    
+    #Needs to come from meta data    
     rotation = torch.tensor([
     [0.99970895052,-0.017290327698, 0.0168244000524],
     [-0.0110340490937,0.292467236519, 0.956211805344],
@@ -262,8 +216,6 @@ def calculate_intersection_with_screen(o, direction):
     camera_transformation_matrix = torch.eye(4)
     camera_transformation_matrix[:3, :3] = rotation
     inverse_camera_transformation_matrix = torch.inverse(camera_transformation_matrix)
-    
-    # print('IMP o', o )
 
     # De-rotate gaze vector
     inv_rotation = torch.inverse(rotation)
@@ -273,7 +225,6 @@ def calculate_intersection_with_screen(o, direction):
     direction = apply_rotation(inverse_camera_transformation_matrix, direction)
     o = apply_transformation(inverse_camera_transformation_matrix, o)
     
-    # print('IMP o', o )
 
     # Assuming o = (0, 0, 0) for simplicity
     # Solve for t when z = 0
@@ -281,15 +232,10 @@ def calculate_intersection_with_screen(o, direction):
     t = -o[:, 2] / (direction[:, 2] + epsilon)
 
     #t = -o[:, 2] / direction[:, 2]
-    
-    #print('IMP -o[:, 2]', -o[:, 2] )
 
     # Calculate intersection point in millimeters
     p_x = o[:, 0] + t * direction[:, 0]
     p_y = o[:, 1] + t * direction[:, 1]
-    
-    #print('IMP p_x', torch.stack([p_x, p_y], dim=-1))
-    #print('IMP p_y', p_y )
 
     return torch.stack([p_x, p_y], dim=-1)
 
@@ -306,26 +252,8 @@ def mm_to_pixels(intersection_mm, screen_size_mm, screen_size_pixels):
     intersection_px = intersection_mm * torch.tensor([ppmm_x, ppmm_y])
     return intersection_px
 
-# def calculate_gaze_origin_direction(x1,x2,y1,y2,z_gd, z1=0, z2=0):
-def calculate_gaze_origin_direction(x,y,z_gd, z1=0, z2=0):
-    # Convert points to tensors
-    # x1 = 293
-    # x2 = 346
-    # y1 = 406
-    # y2 = 405
-    # point1 = torch.tensor([x1, y1, z1], dtype=torch.float32)
-    # point2 = torch.tensor([x2, y2, z2], dtype=torch.float32)
-    # print('lx1',lx1)
-    print("Inside gaze origin")
-    print("z_gd",z_gd)
-    # print('POint 1',x1,y1)
-    # point1 = torch.tensor([x1, y1, z1], dtype=torch.float32)
-    # print('POint 1',x1,y1)
-    # point2 = torch.tensor([x2, y2, z2], dtype=torch.float32)
-    # print('POint 2',x2,y2)
+def calculate_gaze_origin_direction(x,y,z_gd, z1=0):
 
-    # Calculate the vector pointing from point1 to point2
-    # direction_vector = point2 - point1
     direction_vector = torch.tensor([x,y,z1], dtype=torch.float32)
 
     # Normalize the vector to get a unit vector
@@ -337,54 +265,6 @@ def calculate_gaze_origin_direction(x,y,z_gd, z1=0, z2=0):
     print('origin', unit_vector)
 
     return unit_vector
-
-#eyenet= EyeNet()
-# eyenet_r= EyeNet()
-
-# eyenet_l= EyeNet()
-
-
-
-# Load and preprocess the image
-image_dir = r'C:\\Rushi\\ProDataset\\train\\images\\iPhone 5S\\cropped_eyes'
-meta_dir = r'C:\\Rushi\\ProDataset\\train\\meta'
-img_tensor = None
-lx1, lx2, ly1, ly2 = 0, 0, 0, 0
-rx1, rx2, ry1, ry2 = 0, 0, 0, 0
-
-output_json_path = r'C:\\Rushi\\ProDataset\\train\\output'
-
-def loop_through_directory(image_dir, meta_dir):
-    print("looping")
-    results_list = []
-    for meta_file in os.listdir(meta_dir):
-        if meta_file.endswith('.json'):
-            base_filename = meta_file[:-5]
-            #print('base_filename',base_filename)
-            left_eye_filename = f"{base_filename}_left_eye.jpg"
-            right_eye_filename = f"{base_filename}_right_eye.jpg"
-            # print(left_eye_filename)
-            left_eye_path = os.path.join(image_dir, left_eye_filename)
-            right_eye_path = os.path.join(image_dir, right_eye_filename)
-            meta_path = os.path.join(meta_dir, meta_file)
-            if os.path.exists(left_eye_path):
-                results = process_image_with_metadata(left_eye_path, meta_path)
-                results_list.append(results)
-            if os.path.exists(right_eye_path):
-                results = process_image_with_metadata(right_eye_path, meta_path)
-                results_list.append(results)
-    with open(output_json_path, 'w') as json_file:
-        json.dump(results_list, json_file, indent=4)
-
-def preprocess_image(img):
-    preprocess = transforms.Compose([
-        transforms.Resize(224),
-        transforms.CenterCrop(224),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-    ])
-    print("preprocessed ")
-    return preprocess(img)
 
 def average_point_of_gaze(pog1, pog2):
     """
@@ -404,8 +284,6 @@ def average_point_of_gaze(pog1, pog2):
     # Calculate the average point of gaze
     avg_pog_tensor = (pog1_tensor + pog2_tensor) / 2
 
-    # Convert the average point of gaze back to a tuple
-    #avg_pog = tuple(avg_pog_tensor.tolist())
     avg_pog = avg_pog_tensor.tolist()
     
     print('Avg Pog',avg_pog)
@@ -413,8 +291,6 @@ def average_point_of_gaze(pog1, pog2):
     return avg_pog
 
 def generate_heatmap(image_size, pos, sigma=10):
-    print("Inside generate heatmap")
-    print("PoG heatmap",pos)
     """
     Generate a Gaussian heatmap centered at pos (x, y).
 
@@ -427,7 +303,6 @@ def generate_heatmap(image_size, pos, sigma=10):
     heatmap = np.zeros((image_size[1], image_size[0]), dtype=np.float32)
 
     # Ensure the position is integer
-    #pos = [int(p) for p in pos]
     pos = np.round(pos).astype(int)
     print("PoG heatmap",pos[0][1],pos[0][0])
 
@@ -473,8 +348,7 @@ def find_gaze_from_heatmap_tensor(heatmap):
     # Return as (x, y) for consistency
     return (x, y)
 
-############### GazeRefineNet
-
+############### GazeRefineNet ############################# 
 
 class GazeRefineNet(nn.Module):
     def __init__(self, activation=nn.ReLU):
@@ -508,17 +382,12 @@ class GazeRefineNet(nn.Module):
         )
 
     def forward(self,img_tensor_l, lx, ly, img_tensor_r, rx, ry):
-        print("Inside GRN forward")
-        # print("Avg pog", average_pog)
-        # Example preprocessing step
-        # Assuming input_dict contains 'screen_frame' and 'heatmap_initial'
-
+        
         gaze_direction_l, pupil_size_l, point_of_gaze_px_l = self.eyeNet_l( img_tensor_l, lx, ly) # need to add screen width and height
         
         gaze_direction_r, pupil_size_r, point_of_gaze_px_r = self.eyeNet_r( img_tensor_r, rx, ry)
 
         average_gaze_direction = (gaze_direction_l + gaze_direction_r) /2
-
 
         average_pog = average_point_of_gaze(point_of_gaze_px_r, point_of_gaze_px_l)
 
@@ -529,16 +398,8 @@ class GazeRefineNet(nn.Module):
 
         print("Initial heatmap",initial_heatmap)
 
-        input_image = initial_heatmap
-        # if config['load_screen_content']:
-        #     input_image = None
-        #     #input_image = torch.cat([input_dict['screen_frame'], input_dict['heatmap_initial']], dim=1)
-        # else:
-        #     heatmap1 = generate_heatmap(image_size, pos, sigma)
-        #     input_image = heatmap1
-
         # Pass through initial convolutions
-        x = self.initial_conv(input_image)
+        x = self.initial_conv(initial_heatmap)
         # Pass through the backbone
         x = self.backbone(x)
         # Generate final heatmap
@@ -549,111 +410,10 @@ class GazeRefineNet(nn.Module):
         
         ### Final PoG from GRN
         PoG_GRN= find_gaze_from_heatmap(final_heatmap_np)
-        # PoG_GRN= find_gaze_from_heatmap_tensor(final_heatmap)
-
-        
-
-        return average_gaze_direction, PoG_GRN
+        return average_pog, PoG_GRN
 
 # Need to change configuration accordingly
 config = {
     'load_screen_content': False,
     'use_skip_connections': True,
 }
-# heatmap1 = generate_heatmap(image_size, pos, sigma)
-# heatmap1= torch.from_numpy(heatmap1).float()
-# heatmap1= heatmap1.unsqueeze(0).unsqueeze(0)
-
-# Initialize the model
-# model = GazeRefineNet(config)
-# final_heatmap = model(heatmap1)
-# final_heatmap_np = final_heatmap.detach().cpu().numpy().squeeze()
-# plt.imshow(final_heatmap_np, cmap='hot', interpolation='nearest')
-# plt.colorbar()
-# plt.show()
-
-#To call eyeNet for left and right eye
-
-
-
-#BCE Loss
-# final_heatmap_resized = F.interpolate(final_heatmap, size=heatmap1.shape[2:], mode='bilinear', align_corners=False)
-
-
-# bce_loss = nn.BCELoss()
-# m = nn.Sigmoid()
-# output = bce_loss(m(final_heatmap_resized), heatmap1)
-# output.backward()
-# print(output)
-
-def process_image_with_metadata(image_path, meta_path):
-    results = {}
-    global img_tensor
-    img = Image.open(image_path)
-    img_tensor = preprocess_image(img)
-    with open(meta_path, 'r') as meta_file:
-        metadata = json.load(meta_file)
-        # lx1 = metadata['leye_x1']
-        # ly1 = metadata['leye_y1']
-        # lx2 = metadata['leye_x2']
-        # ly2 = metadata['leye_y2']
-        # rx1 = metadata['reye_x1']
-        # ry1 = metadata['reye_y1']
-        # rx2 = metadata['reye_x2']
-        # ry2 = metadata['reye_y2']
-        # dot_px = [metadata['dot_x_pix'],metadata['dot_y_pix']]
-        #gaze_direction, pupil_size, point_of_gaze_px = eyenet(img_tensor.unsqueeze(0),lx1,lx2)
-        gaze_direction_r, pupil_size_r, point_of_gaze_px_r = eyenet_r(img_tensor.unsqueeze(0),rx1, rx2, ry1, ry2)
-        gaze_direction_l, pupil_size_l, point_of_gaze_px_l = eyenet_l( img_tensor.unsqueeze(0),lx1, lx2, ly1, ly2)
-        print("Predicted Point of Gaze R:", point_of_gaze_px_r)
-        print("Predicted Point of Gaze L:", point_of_gaze_px_l)
-        
-        # Calculate the average point of gaze
-        average_pog = average_point_of_gaze(point_of_gaze_px_r, point_of_gaze_px_l)
-        heatmap_initial = generate_heatmap(screen_size_pixels_heatmap, average_pog, sigma )
-        ## save heatmap to results
-        heatmap_initial= torch.from_numpy(heatmap_initial).float()
-        heatmap_initial= heatmap_initial.unsqueeze(0).unsqueeze(0)
-        
-        ### GazeREfinenet training and initialisation
-        GRNmodel = GazeRefineNet(config)
-        final_heatmap = GRNmodel(heatmap_initial)
-        # final_heatmap_np = final_heatmap.detach().cpu().numpy().squeeze()
-        final_heatmap_np = final_heatmap.detach().numpy().squeeze()
-        
-        ### Final PoG from GRN
-        PoG_GRN= find_gaze_from_heatmap(final_heatmap_np)
-
-        # print("Predicted Gaze Direction:", gaze_direction_r)
-        # print("Predicted Gaze Direction:", gaze_direction_l)
-        # print("Predicted Pupil Size:", pupil_size)
-        # print("Predicted Point of Gaze R:", point_of_gaze_px_r)
-        # print("Predicted Point of Gaze L:", point_of_gaze_px_l)
-        # magnitude = torch.norm(gaze_direction, p=2)
-        # magnitude = magnitude *(180/np.pi)
-        # print("Normalized Gaze Direction Magnitude(in radians):", magnitude.item())
-        print('Average PoG',average_pog)
-        print('Final PoG',PoG_GRN)
-
-        results['image_path'] = image_path
-        results['gaze_direction_l'] = gaze_direction_l.tolist()
-        results['gaze_direction_r'] = gaze_direction_r.tolist()
-        results['pupil_size_l'] = pupil_size_l.item()
-        results['pupil_size_r'] = pupil_size_r.item()
-        results['average_pog'] = average_pog.tolist()
-        results['final_pog'] = PoG_GRN.item()
-    
-    return results
-    # print("lx", lx1)
-    # print(f"Processed {image_path} using {meta_path}")
-
-# loop_through_directory(image_dir, meta_dir)
-
-# gaze_direction, pupil_size, point_of_gaze_px = eyenet(img_tensor.unsqueeze(0))
-
-# print("Predicted Gaze Direction:", gaze_direction)
-# print("Predicted Pupil Size:", pupil_size)
-# print("Predicted Point of Gaze:", point_of_gaze_px)
-# magnitude = torch.norm(gaze_direction, p=2)
-# magnitude = magnitude *(180/np.pi)
-# print("Normalized Gaze Direction Magnitude(in radians):", magnitude.item())
