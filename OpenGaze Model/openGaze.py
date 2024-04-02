@@ -111,21 +111,21 @@ class eyeModel(nn.Module):
             nn.Conv2d(3, 32, kernel_size=7, stride=2, padding=0), #First Convolutional Layer
             nn.BatchNorm2d(32, momentum=0.9),
             nn.LeakyReLU(inplace=True),
-            nn.MaxUnpool2d(kernel_size=3),
+            nn.MaxPool2d(kernel_size=3),
             nn.CrossMapLRN2d(size=5, alpha=0.00001, beta=0.75, k = 1.0),
             nn.Dropout(0.02),
             
             nn.Conv2d(32, 64, kernel_size=5, stride=2, padding=0), #Second Convolutional Layer
             nn.BatchNorm2d(64, momentum=0.9),
             nn.LeakyReLU(inplace=True),
-            nn.MaxUnpool2d(kernel_size=3),
+            nn.MaxPool2d(kernel_size=3),
             nn.CrossMapLRN2d(size=5, alpha=0.00001, beta=0.75, k = 1.0),
             nn.Dropout(0.02),
             
             nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=0), #Third Convolutional Layer
             nn.BatchNorm2d(128, momentum=0.9),
             nn.LeakyReLU(inplace=True),
-            nn.MaxUnpool2d(kernel_size=3),
+            nn.MaxPool2d(kernel_size=3),
             nn.CrossMapLRN2d(size=5, alpha=0.00001, beta=0.75, k = 1.0),
             nn.Dropout(0.02),
         )
