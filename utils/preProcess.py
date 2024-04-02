@@ -8,19 +8,21 @@ Frames from MIT Dataset, split in train/test.
 Create a metadata for each image 
 '''
 
-device_dimensions = {
-    'iPhone12': {'width': 750, 'height': 1334},
-    'GalaxyS21': {'width': 1080, 'height': 2400},
+# device_dimensions = {
+#     'iPhone12': {'width': 750, 'height': 1334},
+#     'GalaxyS21': {'width': 1080, 'height': 2400},
     
-    # Add other devices
-}
+#     # Add other devices
+# }
 
 def convert_dataset(files,out_root):
+    devices_set = set()
     for i in files:
         with open(i+"/info.json") as f:
             data = json.load(f)
             ds = data['Dataset']
             device = data['DeviceName']
+        devices_set.add(device)
         out_dir = out_root+ds
         expt_name = i.split('\\')[-2]
         screen_info = json.load(open(i+'/screen.json'))
@@ -47,13 +49,13 @@ def convert_dataset(files,out_root):
             meta = {}
             meta['device'] = device
             # Look up device dimensions based on the device name
-            if device in device_dimensions:
-                meta['device_w'] = device_dimensions[device]['width']
-                meta['device_h'] = device_dimensions[device]['height']
-            else:
+            # if device in device_dimensions:
+            #     meta['device_w'] = device_dimensions[device]['width']
+            #     meta['device_h'] = device_dimensions[device]['height']
+            # else:
                 # Default dimensions or a method to handle unknown devices
-                meta['device_w'] = 0 
-                meta['device_h'] = 0 
+            #     meta['device_w'] = 0 
+            #     meta['device_h'] = 0 
             meta['screen_h'], meta['screen_w'] = screen_info["H"][frame_idx], screen_info["W"][frame_idx]
             meta['face_valid'] = face_det["IsValid"][frame_idx]
             meta['face_x'], meta['face_y'], meta['face_w'], meta['face_h'] = round(face_det['X'][frame_idx]), round(face_det['Y'][frame_idx]), round(face_det['W'][frame_idx]), round(face_det['H'][frame_idx])
@@ -72,6 +74,13 @@ def convert_dataset(files,out_root):
             with open(meta_file, 'w') as outfile:
                 json.dump(meta, outfile)
         print(i + " completed. Images = " + str(len(frame_ids)))
+    devices_list = list(devices_set)
+    print("devices_list ", devices_list)
+
+    with open('unique_devices.txt', 'w') as txt_file:
+        for device in devices_list:
+            txt_file.write(device + "\n")
+    print("Unique device names written to unique_devices.txt")
     return 0
 
 
