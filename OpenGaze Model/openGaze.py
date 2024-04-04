@@ -17,7 +17,7 @@ class openGaze(pl.LightningModule):
         self.learningRate = 0.016
         self.batch_size = 256
         self.data_path = data_path
-        self.workers = 15
+        self.workers = 7
         print("Data Path: ", data_path)
         self.save_path = save_path
         torch.set_float32_matmul_precision('high')
@@ -51,7 +51,7 @@ class openGaze(pl.LightningModule):
         y_hat = self(l_eye, r_eye, kps)
         loss = F.mse_loss(y_hat, y)
         print('train_loss', loss)
-        self.log('train_loss', loss, on_step=True, on_epoch=True)
+        self.log('train_loss', loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
         return loss
     
     def train_dataloader(self):
@@ -74,32 +74,24 @@ class openGaze(pl.LightningModule):
         y_hat = self(l_eye, r_eye, kps)
         val_loss = F.mse_loss(y_hat, y)
         print('val_loss', val_loss)
-        self.log('val_loss', val_loss, on_step=True, on_epoch=True)
+        self.log('val_loss', val_loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
         return val_loss
     
     def configure_optimizers(self):
-        # optimizer = torch.optim.Adam(self.parameters(), lr=self.learningRate, betas=(0.9, 0.999), eps=1e-07)
-        # optimizer = torch.optim.SGD(self.parameters(), lr=self.learningRate, momentum=0.9)
-        # scheduler = ExponentialLR(optimizer, gamma=0.64, verbose=True)
-        # #scheduler = ReduceLROnPlateau(optimizer, 'min', verbose=True)
-        # return {
-        #     'optimizer': optimizer,
-        #     'lr_scheduler': {
-        #         'scheduler': scheduler,
-        #         'monitor': 'val_loss'
-        #     }
-        # }
-        optimizer = torch.optim.AdamW(self.parameters(), lr=self.learningRate, betas=(0.9, 0.999), eps=1e-07, weight_decay=1e-4)
-        scheduler_plateau = ReduceLROnPlateau(optimizer, 'min', factor=0.5, patience=10)
-        scheduler_combined = CombinedLRScheduler(optimizer, warmup_epochs=1, initial_lr=self.learningRate, scheduler_plateau=scheduler_plateau)
+        # Use AdamW for potentially better performance due to decoupled weight decay regularization
+        optimizer = torch.optim.AdamW(self.parameters(), lr=self.learningRate, betas=(0.9, 0.999), eps=1e-08, weight_decay=1e-2)
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=10)
 
         return {
             'optimizer': optimizer,
             'lr_scheduler': {
-                'scheduler': scheduler_combined,
+                'scheduler': scheduler,
                 'monitor': 'val_loss',
+                'frequency': 1,  # Check every epoch
+                'name': 'ReduceLROnPlateau'
             }
         }
+
 '''
 This class defines a convolutional neural network (CNN) model for processing eye images.
 It consists of three convolutional layers, each followed by batch normalization, a leaky
@@ -159,18 +151,6 @@ class landMark(nn.Module):
         x = self.model(x)
         return x
     
-class CombinedLRScheduler(_LRScheduler):
-    def __init__(self, optimizer, warmup_epochs, initial_lr, scheduler_plateau, last_epoch=-1, verbose=False):
-        self.warmup_epochs = warmup_epochs
-        self.initial_lr = initial_lr
-        self.scheduler_plateau = scheduler_plateau
-        super().__init__(optimizer, last_epoch, verbose)
-
-    def get_lr(self):
-        if self.last_epoch < self.warmup_epochs:
-            return [self.initial_lr * ((self.last_epoch + 1) / self.warmup_epochs) for base_lr in self.base_lrs]
-        self.scheduler_plateau.step()  # Update the ReduceLROnPlateau scheduler each epoch after warmup
-        return self.scheduler_plateau.optimizer.param_groups[0]['lr']
     
 #xy = openGaze()
 #print(xy.eval())
