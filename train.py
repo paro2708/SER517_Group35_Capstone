@@ -4,8 +4,8 @@ import pytorch_lightning as pl
 if __name__ == '__main__':
     # image_dir = r'C:\\Rushi\\ProDataset\\train\\images\\iPhone 5S\\cropped_eyes'
     
-    image_dir = r'C:\Users\rpatil29\ProDataset\train\iPhone 5S\cropped_eyes'
-    meta_dir = r'C:\Users\rpatil29\ProDataset\train\meta'
+    image_dir = r'C:\Users\ASU Zoom 01\Downloads\ProDataset\train\images\iPhone 5S\cropped_eyes'
+    meta_dir = r'C:\Users\ASU Zoom 01\Downloads\ProDataset\train\meta'
     save_dir = "../Result"
  
     model = GRN(data_path= image_dir, save_path= save_dir)

@@ -145,6 +145,7 @@ class openGazeData(Dataset):
                 left_eye_path = os.path.join(self.image_dir, left_eye_filename)
                 right_eye_path = os.path.join(self.image_dir, right_eye_filename)
                 meta_path = os.path.join(self.meta_dir, meta_file)
+                print("File",base_filename)
 
                 # print('left eye path',left_eye_path)
                 

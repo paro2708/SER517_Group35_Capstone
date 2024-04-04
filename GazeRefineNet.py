@@ -41,16 +41,16 @@ class GRN(pl.LightningModule):
     print("Data Path: ", data_path)
     self.save_path = save_path
     # self.image_dir = r'C:\\Rushi\\ProDataset\\train\\images\\iPhone 5S\\cropped_eyes'
-    self.image_dir = r'E:\ProDataset\train\images\iPhone 5S\cropped_eyes'
+    self.image_dir = r'C:\Users\ASU Zoom 01\Downloads\ProDataset\train\images\iPhone 5S\cropped_eyes'
     # self.meta_dir = r'C:\\Rushi\\ProDataset\\train\\meta'
-    self.meta_dir = r'E:\ProDataset\train\meta'
+    self.meta_dir = r'C:\Users\ASU Zoom 01\Downloads\ProDataset\train\meta'
     
         
     self.gazeRefineNet = GazeRefineNet() #Initialized landmark model
     
  
   def forward(self, screen_w, screen_h, lx, ly, rx, ry, dot_px, device, img_tensor_l, img_tensor_r, initial_heatmap=None):
-        average_gaze_direction, grn_final_PoG = self.gazeRefineNet(img_tensor_l, lx, ly, img_tensor_r, rx, ry)
+        average_gaze_direction = self.gazeRefineNet(img_tensor_l, lx, ly, img_tensor_r, rx, ry)
         print("return forward grn")
         # return grn_final_PoG
         return average_gaze_direction
@@ -71,26 +71,33 @@ class GRN(pl.LightningModule):
         train_loader = DataLoader(train_dataset, batch_size=self.batch_size, num_workers=self.workers, shuffle=True, persistent_workers=True)
         print('Num_train_files', len(train_dataset))
         return train_loader
+  
+  def val_dataloader(self):
+        print("inside val loader")
+        train_dataset = openGazeData(self.image_dir, self.meta_dir)
+        print("inside train loader", train_dataset)
+        print(self.data_path+ "/train/")
+        train_loader = DataLoader(train_dataset, batch_size=self.batch_size, num_workers=self.workers, shuffle=True, persistent_workers=True)
+        print('Num_train_files', len(train_dataset))
+        return train_loader
     
   def validation_step(self, batch, batch_idx):
-        x, y = batch
-        inputs, target = batch
-        output = self.model(inputs, target)
-        loss = torch.nn.functional.nll_loss(output, target.view(-1))
-        pred = ...
-        self.validation_step_outputs.append(pred)
-        return pred
+        _, kps, out, screen_w, screen_h, lx, ly, rx, ry, dot_px, device, img_tensor_l, img_tensor_r = batch
+        grn_out = self.forward(screen_w, screen_h, lx, ly, rx, ry, dot_px, device, img_tensor_l, img_tensor_r)
+        loss = F.mse_loss(grn_out, out)
+        print('val_loss', loss)
+        self.log('val_loss', loss, on_step=True, on_epoch=True)
+        return loss
+  
   def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), lr=self.learningRate, betas=(0.9, 0.999), eps=1e-07)
-#         scheduler = ExponentialLR(optimizer, gamma=0.64, verbose=True)
-        scheduler = ReduceLROnPlateau(optimizer, 'min', verbose=True)
-        return {
-            'optimizer': optimizer,
-            'lr_scheduler': {
-                'scheduler': scheduler,
-                'monitor': 'val_loss'
-            }
-        }
+        optimizer = torch.optim.Adam(self.parameters(), lr=0.001)
+        lr_scheduler = {'scheduler': torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=10),
+                        'monitor': 'train_loss',  # Note how the 'monitor' key is part of the dictionary.
+                        'interval': 'epoch',
+                        'frequency': 1,
+                        'reduce_on_plateau': True,  # This line is actually unnecessary as it's implicit with ReduceLROnPlateau
+                        }
+        return [optimizer], [lr_scheduler]
 
 #EyeNet model
 class EyeNet(nn.Module):
@@ -152,8 +159,10 @@ class EyeNet(nn.Module):
     #to calculate point of gaze
     gaze_direction = (0.5 * np.pi) * self.fc_gaze(features)
     gaze_direction_vector= convert_angles_to_vector(gaze_direction)
+    print("gaze direction vector",gaze_direction_vector)
     origin = calculate_gaze_origin_direction(x,y,torch.tensor([0. ,0. ,gaze_direction_vector[0][2]]), z1=0, z2=0)
     point_of_gaze_mm = calculate_intersection_with_screen(origin,gaze_direction_vector)
+    print("PoG_mm",(point_of_gaze_mm+point_of_gaze_mm) /2)
     point_of_gaze_px = mm_to_pixels(point_of_gaze_mm,screen_size_mm, screen_size_pixels)
     pupil_size =self.fc_pupil(features)
     return gaze_direction, pupil_size , point_of_gaze_px
@@ -252,9 +261,11 @@ def mm_to_pixels(intersection_mm, screen_size_mm, screen_size_pixels):
     intersection_px = intersection_mm * torch.tensor([ppmm_x, ppmm_y])
     return intersection_px
 
-def calculate_gaze_origin_direction(x,y,z_gd, z1=0):
+def calculate_gaze_origin_direction(x,y,z_gd, z1=0,z2=0):
 
     direction_vector = torch.tensor([x,y,z1], dtype=torch.float32)
+    print("GAze ortigin x y", x,y)
+    print("direction vector",direction_vector)
 
     # Normalize the vector to get a unit vector
     unit_vector = direction_vector / torch.norm(direction_vector)
@@ -288,7 +299,7 @@ def average_point_of_gaze(pog1, pog2):
     
     print('Avg Pog',avg_pog)
 
-    return avg_pog
+    return avg_pog, avg_pog_tensor
 
 def generate_heatmap(image_size, pos, sigma=10):
     """
@@ -382,6 +393,8 @@ class GazeRefineNet(nn.Module):
         )
 
     def forward(self,img_tensor_l, lx, ly, img_tensor_r, rx, ry):
+
+        print("lx ly and rx ry",lx,ly,rx,ry)
         
         gaze_direction_l, pupil_size_l, point_of_gaze_px_l = self.eyeNet_l( img_tensor_l, lx, ly) # need to add screen width and height
         
@@ -389,7 +402,7 @@ class GazeRefineNet(nn.Module):
 
         average_gaze_direction = (gaze_direction_l + gaze_direction_r) /2
 
-        average_pog = average_point_of_gaze(point_of_gaze_px_r, point_of_gaze_px_l)
+        average_pog , avg_pog_tensor = average_point_of_gaze(point_of_gaze_px_r, point_of_gaze_px_l)
 
         initial_heatmap = generate_heatmap(screen_size_pixels_heatmap, average_pog, sigma)
         initial_heatmap = torch.tensor(initial_heatmap, dtype=torch.float32).unsqueeze(0)
@@ -410,7 +423,8 @@ class GazeRefineNet(nn.Module):
         
         ### Final PoG from GRN
         PoG_GRN= find_gaze_from_heatmap(final_heatmap_np)
-        return average_pog, PoG_GRN
+        print("PoG_GRN",PoG_GRN)
+        return average_gaze_direction
 
 # Need to change configuration accordingly
 config = {
