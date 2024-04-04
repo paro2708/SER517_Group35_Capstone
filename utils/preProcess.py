@@ -1,6 +1,10 @@
 import json
 import os
 import numpy as np
+<<<<<<< HEAD
+=======
+import shutil
+>>>>>>> c80dce1 (Utils Added)
 from glob import glob
 
 '''
@@ -8,6 +12,7 @@ Frames from MIT Dataset, split in train/test.
 Create a metadata for each image 
 '''
 
+<<<<<<< HEAD
 # device_dimensions = {
 #     'iPhone12': {'width': 750, 'height': 1334},
 #     'GalaxyS21': {'width': 1080, 'height': 2400},
@@ -17,12 +22,18 @@ Create a metadata for each image
 
 def convert_dataset(files,out_root):
     devices_set = set()
+=======
+def convert_dataset(files,out_root):
+>>>>>>> c80dce1 (Utils Added)
     for i in files:
         with open(i+"/info.json") as f:
             data = json.load(f)
             ds = data['Dataset']
             device = data['DeviceName']
+<<<<<<< HEAD
         devices_set.add(device)
+=======
+>>>>>>> c80dce1 (Utils Added)
         out_dir = out_root+ds
         expt_name = i.split('\\')[-2]
         screen_info = json.load(open(i+'/screen.json'))
@@ -30,11 +41,17 @@ def convert_dataset(files,out_root):
         l_eye_det = json.load(open(i+'/appleLeftEye.json'))
         r_eye_det = json.load(open(i+'/appleRightEye.json'))
         dot = json.load(open(i+'/dotInfo.json'))
+<<<<<<< HEAD
         motion = json.load(open(i+'/motion.json'))
         
         # Determine frames where the device is in portrait orientation and both eyes are detected.
 
         attitude_rotation_matrix = motion[0]['AttitudeRotationMatrix'] if 'AttitudeRotationMatrix' in motion[0] else None
+=======
+        
+        # Determine frames where the device is in portrait orientation and both eyes are detected.
+
+>>>>>>> c80dce1 (Utils Added)
         portrait_orientation = np.asarray(screen_info["Orientation"])==1
         l_eye_valid, r_eye_valid = np.array(l_eye_det['IsValid']), np.array(r_eye_det['IsValid'])
         valid_ids = l_eye_valid*r_eye_valid*portrait_orientation
@@ -48,6 +65,7 @@ def convert_dataset(files,out_root):
             # Prepare metadata for the current frame. 
             meta = {}
             meta['device'] = device
+<<<<<<< HEAD
             # Look up device dimensions based on the device name
             # if device in device_dimensions:
             #     meta['device_w'] = device_dimensions[device]['width']
@@ -56,6 +74,8 @@ def convert_dataset(files,out_root):
                 # Default dimensions or a method to handle unknown devices
             #     meta['device_w'] = 0 
             #     meta['device_h'] = 0 
+=======
+>>>>>>> c80dce1 (Utils Added)
             meta['screen_h'], meta['screen_w'] = screen_info["H"][frame_idx], screen_info["W"][frame_idx]
             meta['face_valid'] = face_det["IsValid"][frame_idx]
             meta['face_x'], meta['face_y'], meta['face_w'], meta['face_h'] = round(face_det['X'][frame_idx]), round(face_det['Y'][frame_idx]), round(face_det['W'][frame_idx]), round(face_det['H'][frame_idx])
@@ -65,15 +85,19 @@ def convert_dataset(files,out_root):
             meta['dot_xcam'], meta['dot_y_cam'] = dot['XCam'][frame_idx], dot['YCam'][frame_idx]
             meta['dot_x_pix'], meta['dot_y_pix'] = dot['XPts'][frame_idx], dot['YPts'][frame_idx]
             
+<<<<<<< HEAD
             # Add the first AttitudeRotationMatrix to the metadata
             if attitude_rotation_matrix:
                 meta['attitude_rotation_matrix'] = attitude_rotation_matrix
 
+=======
+>>>>>>> c80dce1 (Utils Added)
             os.makedirs(out_dir+'/meta/', exist_ok=True)
             meta_file = out_dir+'/meta/'+expt_name+'__'+fname+'.json'
             with open(meta_file, 'w') as outfile:
                 json.dump(meta, outfile)
         print(i + " completed. Images = " + str(len(frame_ids)))
+<<<<<<< HEAD
     devices_list = list(devices_set)
     print("devices_list ", devices_list)
 
@@ -81,6 +105,10 @@ def convert_dataset(files,out_root):
         for device in devices_list:
             txt_file.write(device + "\n")
     print("Unique device names written to unique_devices.txt")
+=======
+        shutil.rmtree(i) #The Frames folder along with properties will b deleted after preprocessing.
+
+>>>>>>> c80dce1 (Utils Added)
     return 0
 
 
