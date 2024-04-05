@@ -42,22 +42,23 @@ class GRN(pl.LightningModule):
     self.save_path = save_path
     # self.image_dir = r'C:\\Rushi\\ProDataset\\train\\images\\iPhone 5S\\cropped_eyes'
     self.image_dir = r'C:\Users\ASU Zoom 01\Downloads\ProDataset\train\images\iPhone 5S\cropped_eyes'
+    # self.image_dir = r'C:\Program Files\Common Files\ProDataset\train\images\cropped_eyes'
     # self.meta_dir = r'C:\\Rushi\\ProDataset\\train\\meta'
     self.meta_dir = r'C:\Users\ASU Zoom 01\Downloads\ProDataset\train\meta'
-    
+    # self.meta_dir = r'C:\Program Files\Common Files\ProDataset\train\meta'
         
     self.gazeRefineNet = GazeRefineNet() #Initialized landmark model
     
  
-  def forward(self, screen_w, screen_h, lx, ly, rx, ry, dot_px, device, img_tensor_l, img_tensor_r, initial_heatmap=None):
-        average_gaze_direction = self.gazeRefineNet(img_tensor_l, lx, ly, img_tensor_r, rx, ry)
+  def forward(self, screen_w, screen_h, lx, ly, rx, ry, dot_px, device, img_tensor_l, img_tensor_r, attitude_rotation_matrix, device_width_pix , device_height_pix , device_width_mm , device_height_mm, initial_heatmap=None):
+        average_gaze_direction = self.gazeRefineNet(img_tensor_l, lx, ly, img_tensor_r, rx, ry, attitude_rotation_matrix, device_width_pix , device_height_pix , device_width_mm , device_height_mm)
         print("return forward grn")
         # return grn_final_PoG
         return average_gaze_direction
     
   def training_step(self, batch, batch_idx):
-        _, kps, out, screen_w, screen_h, lx, ly, rx, ry, dot_px, device, img_tensor_l, img_tensor_r = batch
-        grn_out = self.forward(screen_w, screen_h, lx, ly, rx, ry, dot_px, device, img_tensor_l, img_tensor_r)
+        _, kps, out, screen_w, screen_h, lx, ly, rx, ry, dot_px, device, img_tensor_l, img_tensor_r, attitude_rotation_matrix, device_width_pix , device_height_pix , device_width_mm , device_height_mm = batch
+        grn_out = self.forward(screen_w, screen_h, lx, ly, rx, ry, dot_px, device, img_tensor_l, img_tensor_r,attitude_rotation_matrix, device_width_pix , device_height_pix , device_width_mm , device_height_mm)
         loss = F.mse_loss(grn_out, out)
         print('train_loss', loss)
         self.log('train_loss', loss, on_step=True, on_epoch=True)
@@ -74,6 +75,11 @@ class GRN(pl.LightningModule):
   
   def val_dataloader(self):
         print("inside val loader")
+        val_data_path = r'C:\Program Files\Common Files\ProDataset\val\images\cropped_eyes'
+        val_meta_path = r'C:\Program Files\Common Files\ProDataset\val\meta'
+        print(val_data_path)
+        print(val_meta_path)
+        # train_dataset = openGazeData(self.image_dir, self.meta_dir)
         train_dataset = openGazeData(self.image_dir, self.meta_dir)
         print("inside train loader", train_dataset)
         print(self.data_path+ "/train/")
@@ -82,8 +88,8 @@ class GRN(pl.LightningModule):
         return train_loader
     
   def validation_step(self, batch, batch_idx):
-        _, kps, out, screen_w, screen_h, lx, ly, rx, ry, dot_px, device, img_tensor_l, img_tensor_r = batch
-        grn_out = self.forward(screen_w, screen_h, lx, ly, rx, ry, dot_px, device, img_tensor_l, img_tensor_r)
+        _, kps, out, screen_w, screen_h, lx, ly, rx, ry, dot_px, device, img_tensor_l, img_tensor_r, attitude_rotation_matrix, device_width_pix , device_height_pix , device_width_mm , device_height_mm  = batch
+        grn_out = self.forward(screen_w, screen_h, lx, ly, rx, ry, dot_px, device, img_tensor_l, img_tensor_r, attitude_rotation_matrix, device_width_pix , device_height_pix , device_width_mm , device_height_mm )
         loss = F.mse_loss(grn_out, out)
         print('val_loss', loss)
         self.log('val_loss', loss, on_step=True, on_epoch=True)
@@ -129,7 +135,7 @@ class EyeNet(nn.Module):
                       nn.ReLU(inplace=True),
                   )  # Output size for pupil size
 
-  def forward(self, img_tensor, x, y, rnn_output=None):
+  def forward(self, img_tensor, x, y, attitude_rotation_matrix, device_width_pix , device_height_pix , device_width_mm , device_height_mm, rnn_output=None):
 
     features = self.resnet(img_tensor)
 
@@ -161,9 +167,9 @@ class EyeNet(nn.Module):
     gaze_direction_vector= convert_angles_to_vector(gaze_direction)
     print("gaze direction vector",gaze_direction_vector)
     origin = calculate_gaze_origin_direction(x,y,torch.tensor([0. ,0. ,gaze_direction_vector[0][2]]), z1=0, z2=0)
-    point_of_gaze_mm = calculate_intersection_with_screen(origin,gaze_direction_vector)
+    point_of_gaze_mm = calculate_intersection_with_screen(origin,gaze_direction_vector,attitude_rotation_matrix)
     print("PoG_mm",(point_of_gaze_mm+point_of_gaze_mm) /2)
-    point_of_gaze_px = mm_to_pixels(point_of_gaze_mm,screen_size_mm, screen_size_pixels)
+    point_of_gaze_px = mm_to_pixels(point_of_gaze_mm, device_width_pix , device_height_pix , device_width_mm , device_height_mm)
     pupil_size =self.fc_pupil(features)
     return gaze_direction, pupil_size , point_of_gaze_px
 
@@ -204,7 +210,7 @@ def apply_rotation(T, vec):
     return torch.matmul(R, vec).reshape(-1, 3)
 
 # To calculate point of gaze, gaze origin assumed to be 0,0,0
-def calculate_intersection_with_screen(o, direction):
+def calculate_intersection_with_screen(o, direction,attitude_rotation_matrix):
 
     # Ensure o and direction are 2D tensors [N, 3]
     if o.dim() == 1:
@@ -212,22 +218,23 @@ def calculate_intersection_with_screen(o, direction):
     if direction.dim() == 1:
         direction = direction.unsqueeze(0)  # Add batch dimension if necessary
     
-    
-    #Needs to come from meta data    
-    rotation = torch.tensor([
-    [0.99970895052,-0.017290327698, 0.0168244000524],
-    [-0.0110340490937,0.292467236519, 0.956211805344],
-    [-0.0214538034052,-0.956119179726,0.292191326618]
-    ], dtype=torch.float32)
-    
+    rows = 3
+    cols = 3
+
+    # Convert the flat list to a 3x3 matrix using list comprehension
+    matrix = [attitude_rotation_matrix[i * cols:(i + 1) * cols] for i in range(rows)]
+    print(matrix)
+
+    attitude_rotation_matrix=torch.tensor(matrix, dtype=torch.float32)
+
     
     # Assuming no translation, and the camera is at the origin of the world space
     camera_transformation_matrix = torch.eye(4)
-    camera_transformation_matrix[:3, :3] = rotation
+    camera_transformation_matrix[:3, :3] = attitude_rotation_matrix
     inverse_camera_transformation_matrix = torch.inverse(camera_transformation_matrix)
 
     # De-rotate gaze vector
-    inv_rotation = torch.inverse(rotation)
+    inv_rotation = torch.inverse(attitude_rotation_matrix)
     direction = direction.reshape(-1, 3, 1)
     direction = torch.matmul(inv_rotation, direction)
 
@@ -248,14 +255,11 @@ def calculate_intersection_with_screen(o, direction):
 
     return torch.stack([p_x, p_y], dim=-1)
 
-def mm_to_pixels(intersection_mm, screen_size_mm, screen_size_pixels):
-    # Unpack screen dimensions
-    screen_height_mm, screen_width_mm = screen_size_mm
-    screen_height_px, screen_width_px = screen_size_pixels
+def mm_to_pixels(intersection_mm, device_width_pix , device_height_pix , device_width_mm , device_height_mm):
 
     # Calculate pixels per millimeter
-    ppmm_x = screen_width_px #/ screen_width_mm
-    ppmm_y = screen_height_px #/ screen_height_mm
+    ppmm_x = device_width_pix #/ device_width_mm
+    ppmm_y = device_height_pix #/ device_height_mm
 
     # Convert intersection point from mm to pixels
     intersection_px = intersection_mm * torch.tensor([ppmm_x, ppmm_y])
@@ -392,13 +396,13 @@ class GazeRefineNet(nn.Module):
             nn.Sigmoid()  # Assuming the output is a heatmap
         )
 
-    def forward(self,img_tensor_l, lx, ly, img_tensor_r, rx, ry):
+    def forward(self,img_tensor_l, lx, ly, img_tensor_r, rx, ry, attitude_rotation_matrix, device_width_pix , device_height_pix , device_width_mm , device_height_mm):
 
         print("lx ly and rx ry",lx,ly,rx,ry)
         
-        gaze_direction_l, pupil_size_l, point_of_gaze_px_l = self.eyeNet_l( img_tensor_l, lx, ly) # need to add screen width and height
+        gaze_direction_l, pupil_size_l, point_of_gaze_px_l = self.eyeNet_l( img_tensor_l, lx, ly, attitude_rotation_matrix, device_width_pix , device_height_pix , device_width_mm , device_height_mm) # need to add screen width and height
         
-        gaze_direction_r, pupil_size_r, point_of_gaze_px_r = self.eyeNet_r( img_tensor_r, rx, ry)
+        gaze_direction_r, pupil_size_r, point_of_gaze_px_r = self.eyeNet_r( img_tensor_r, rx, ry, attitude_rotation_matrix, device_width_pix , device_height_pix , device_width_mm , device_height_mm)
 
         average_gaze_direction = (gaze_direction_l + gaze_direction_r) /2
 

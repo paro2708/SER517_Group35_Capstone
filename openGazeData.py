@@ -43,6 +43,11 @@ class openGazeData(Dataset):
         rx2 = meta['reye_x2']
         ry2 = meta['reye_y2']
         dot_px = torch.tensor([meta['dot_x_pix'],meta['dot_y_pix']]).float()
+        attitude_rotation_matrix = meta['attitude_rotation_matrix']
+        device_width_pix = meta['device_width_pix']
+        device_height_pix = meta['device_height_pix']
+        device_width_mm = meta['device_width_mm']
+        device_height_mm = meta['device_height_mm']
         print("Dot_px",dot_px)
         device = meta['device']
         img_tensor_l = self.preprocess_image(left_eye_img)
@@ -104,7 +109,7 @@ class openGazeData(Dataset):
         ry=ry2 - ry1
         
         # return self.data[idx], kps, out, screen_w, screen_h, lx1, lx2, ly1, ly2, rx1, rx2, ry1, ry2, dot_px, device, img_tensor_l , img_tensor_r
-        return self.data[idx], kps, out, screen_w, screen_h, lx, ly, rx, ry, dot_px, device, img_tensor_l , img_tensor_r
+        return self.data[idx], kps, out, screen_w, screen_h, lx, ly, rx, ry, dot_px, device, img_tensor_l , img_tensor_r, attitude_rotation_matrix, device_width_pix , device_height_pix , device_width_mm , device_height_mm
     
     def get_transform(self,phase, size):
         print("get transform")
