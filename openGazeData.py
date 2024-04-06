@@ -19,6 +19,9 @@ class openGazeData(Dataset):
     def __getitem__(self,idx):
         print("preprocessed")
         left_eye_path, right_eye_path, meta = self.data[idx]
+        if 'device' in meta and meta['device'] == "iPad Pro":
+            print(f"Skipping iPad Pro data for file: {left_eye_path}, {right_eye_path}")
+            return None
         
         left_eye_img = Image.open(left_eye_path)
         right_eye_img = Image.open(right_eye_path)

@@ -12,16 +12,18 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 import scipy.ndimage
 
 from torch.utils.data import DataLoader
+from torch.utils.data.dataloader import default_collate
 
 import torch.nn as nn
 
 from openGazeData import openGazeData
 
 #dimensions for iphone5s
-screen_size_mm = [123.8 , 53.7]
-screen_size_pixels = [320,568]
-screen_size_pixels_heatmap = [640,1136]
+# screen_size_mm = [123.8 , 53.7]
+# screen_size_pixels = [320,568]
+# screen_size_pixels_heatmap = [640,1136]
 sigma=10
+# count=0
 
 class GRN(pl.LightningModule):
   def __init__(self, data_path, save_path):
@@ -41,17 +43,17 @@ class GRN(pl.LightningModule):
     print("Data Path: ", data_path)
     self.save_path = save_path
     # self.image_dir = r'C:\\Rushi\\ProDataset\\train\\images\\iPhone 5S\\cropped_eyes'
-    self.image_dir = r'C:\Users\ASU Zoom 01\Downloads\ProDataset\train\images\iPhone 5S\cropped_eyes'
-    # self.image_dir = r'C:\Program Files\Common Files\ProDataset\train\images\cropped_eyes'
+    # self.image_dir = r'C:\Users\ASU Zoom 01\Downloads\ProDataset\train\images\iPhone 5S\cropped_eyes'
+    self.image_dir = r'C:\Program Files\Common Files\ProDataset\train\images\cropped_eyes'
     # self.meta_dir = r'C:\\Rushi\\ProDataset\\train\\meta'
-    self.meta_dir = r'C:\Users\ASU Zoom 01\Downloads\ProDataset\train\meta'
-    # self.meta_dir = r'C:\Program Files\Common Files\ProDataset\train\meta'
+    # self.meta_dir = r'C:\Users\ASU Zoom 01\Downloads\ProDataset\train\meta'
+    self.meta_dir = r'C:\Program Files\Common Files\ProDataset\train\meta'
         
     self.gazeRefineNet = GazeRefineNet() #Initialized landmark model
     
  
   def forward(self, screen_w, screen_h, lx, ly, rx, ry, dot_px, device, img_tensor_l, img_tensor_r, attitude_rotation_matrix, device_width_pix , device_height_pix , device_width_mm , device_height_mm, initial_heatmap=None):
-        average_gaze_direction = self.gazeRefineNet(img_tensor_l, lx, ly, img_tensor_r, rx, ry, attitude_rotation_matrix, device_width_pix , device_height_pix , device_width_mm , device_height_mm)
+        average_gaze_direction = self.gazeRefineNet(screen_w, screen_h, img_tensor_l, lx, ly, img_tensor_r, rx, ry, attitude_rotation_matrix, device_width_pix , device_height_pix , device_width_mm , device_height_mm)
         print("return forward grn")
         # return grn_final_PoG
         return average_gaze_direction
@@ -64,12 +66,18 @@ class GRN(pl.LightningModule):
         self.log('train_loss', loss, on_step=True, on_epoch=True)
         return loss
   
+  def collate_skip_none(batch):
+    batch = [item for item in batch if item is not None]
+    if len(batch) == 0:  # If all items were None
+        return None
+    return default_collate(batch)
+  
   def train_dataloader(self):
         print("inside train loader")
         train_dataset = openGazeData(self.image_dir, self.meta_dir)
         print("inside train loader", train_dataset)
         print(self.data_path+ "/train/")
-        train_loader = DataLoader(train_dataset, batch_size=self.batch_size, num_workers=self.workers, shuffle=True, persistent_workers=True)
+        train_loader = DataLoader(train_dataset, batch_size=self.batch_size, num_workers=self.workers, shuffle=True, collate_fn=self.collate_skip_none, persistent_workers=True)
         print('Num_train_files', len(train_dataset))
         return train_loader
   
@@ -77,12 +85,10 @@ class GRN(pl.LightningModule):
         print("inside val loader")
         val_data_path = r'C:\Program Files\Common Files\ProDataset\val\images\cropped_eyes'
         val_meta_path = r'C:\Program Files\Common Files\ProDataset\val\meta'
-        print(val_data_path)
-        print(val_meta_path)
         # train_dataset = openGazeData(self.image_dir, self.meta_dir)
-        train_dataset = openGazeData(self.image_dir, self.meta_dir)
-        print("inside train loader", train_dataset)
-        print(self.data_path+ "/train/")
+        train_dataset = openGazeData(val_data_path, val_meta_path)
+        # print("inside train loader", train_dataset)
+        # print(self.data_path+ "/train/")
         train_loader = DataLoader(train_dataset, batch_size=self.batch_size, num_workers=self.workers, shuffle=True, persistent_workers=True)
         print('Num_train_files', len(train_dataset))
         return train_loader
@@ -135,7 +141,7 @@ class EyeNet(nn.Module):
                       nn.ReLU(inplace=True),
                   )  # Output size for pupil size
 
-  def forward(self, img_tensor, x, y, attitude_rotation_matrix, device_width_pix , device_height_pix , device_width_mm , device_height_mm, rnn_output=None):
+  def forward(self, img_tensor, x, y, attitude_rotation_matrix, device_width_pix , device_height_pix , device_width_mm , device_height_mm, screen_w, screen_h, rnn_output=None):
 
     features = self.resnet(img_tensor)
 
@@ -167,9 +173,10 @@ class EyeNet(nn.Module):
     gaze_direction_vector= convert_angles_to_vector(gaze_direction)
     print("gaze direction vector",gaze_direction_vector)
     origin = calculate_gaze_origin_direction(x,y,torch.tensor([0. ,0. ,gaze_direction_vector[0][2]]), z1=0, z2=0)
+    # origin = gaze_direction
     point_of_gaze_mm = calculate_intersection_with_screen(origin,gaze_direction_vector,attitude_rotation_matrix)
     print("PoG_mm",(point_of_gaze_mm+point_of_gaze_mm) /2)
-    point_of_gaze_px = mm_to_pixels(point_of_gaze_mm, device_width_pix , device_height_pix , device_width_mm , device_height_mm)
+    point_of_gaze_px = mm_to_pixels(point_of_gaze_mm, screen_w, screen_h , device_width_mm , device_height_mm)
     pupil_size =self.fc_pupil(features)
     return gaze_direction, pupil_size , point_of_gaze_px
 
@@ -305,7 +312,7 @@ def average_point_of_gaze(pog1, pog2):
 
     return avg_pog, avg_pog_tensor
 
-def generate_heatmap(image_size, pos, sigma=10):
+def generate_heatmap(device_height_pix, device_width_pix, pos, sigma=10):
     """
     Generate a Gaussian heatmap centered at pos (x, y).
 
@@ -315,7 +322,12 @@ def generate_heatmap(image_size, pos, sigma=10):
     :return: Generated heatmap as a 2D numpy array.
     """
     # Create an empty image
-    heatmap = np.zeros((image_size[1], image_size[0]), dtype=np.float32)
+    heatmap = np.zeros((device_height_pix, device_width_pix), dtype=np.float32)
+
+    if pos[0][0] < -device_width_pix or pos[0][0] >= device_width_pix or pos[0][1] < -device_height_pix or pos[0][1] >= device_height_pix:
+        # count+=1
+        # print("HM count",count)
+        return heatmap
 
     # Ensure the position is integer
     pos = np.round(pos).astype(int)
@@ -396,19 +408,19 @@ class GazeRefineNet(nn.Module):
             nn.Sigmoid()  # Assuming the output is a heatmap
         )
 
-    def forward(self,img_tensor_l, lx, ly, img_tensor_r, rx, ry, attitude_rotation_matrix, device_width_pix , device_height_pix , device_width_mm , device_height_mm):
+    def forward(self,screen_w, screen_h,img_tensor_l, lx, ly, img_tensor_r, rx, ry, attitude_rotation_matrix, device_width_pix , device_height_pix , device_width_mm , device_height_mm):
 
         print("lx ly and rx ry",lx,ly,rx,ry)
         
-        gaze_direction_l, pupil_size_l, point_of_gaze_px_l = self.eyeNet_l( img_tensor_l, lx, ly, attitude_rotation_matrix, device_width_pix , device_height_pix , device_width_mm , device_height_mm) # need to add screen width and height
+        gaze_direction_l, pupil_size_l, point_of_gaze_px_l = self.eyeNet_l( img_tensor_l, lx, ly, attitude_rotation_matrix, device_width_pix , device_height_pix , device_width_mm , device_height_mm ,screen_w, screen_h,) # need to add screen width and height
         
-        gaze_direction_r, pupil_size_r, point_of_gaze_px_r = self.eyeNet_r( img_tensor_r, rx, ry, attitude_rotation_matrix, device_width_pix , device_height_pix , device_width_mm , device_height_mm)
+        gaze_direction_r, pupil_size_r, point_of_gaze_px_r = self.eyeNet_r( img_tensor_r, rx, ry, attitude_rotation_matrix, device_width_pix , device_height_pix , device_width_mm , device_height_mm, screen_w, screen_h)
 
         average_gaze_direction = (gaze_direction_l + gaze_direction_r) /2
 
         average_pog , avg_pog_tensor = average_point_of_gaze(point_of_gaze_px_r, point_of_gaze_px_l)
 
-        initial_heatmap = generate_heatmap(screen_size_pixels_heatmap, average_pog, sigma)
+        initial_heatmap = generate_heatmap(device_height_pix, device_width_pix, average_pog, sigma)
         initial_heatmap = torch.tensor(initial_heatmap, dtype=torch.float32).unsqueeze(0)
 
         print("initial heatmap from forward", initial_heatmap)
