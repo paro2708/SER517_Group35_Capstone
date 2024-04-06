@@ -33,3 +33,30 @@ def train(data_frame, params):
     model = Net().to(device)
 
     optimizer = SGD(model.parameters(), lr=params['learning_rate'], momentum=0.9)
+
+    epochs = params['epochs']
+    for epoch in range(epochs):
+        losses = []
+        for i, (x, m, x_true, y_true) in enumerate(loader):
+            x_pred, y_pred = model(x)
+
+            loss_x = torch.mean(torch.abs(x_true - x_pred))
+            loss_y = torch.mean(torch.abs(y_true - y_pred))
+            loss = loss_x + loss_y
+
+            losses.append(float(loss))
+
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+
+            if i % 50 == 0:
+                print('training epoch {}/{} batch {}/{} loss {}'.format(epoch + 1, epochs, i + 1, len(loader), float(loss)))
+
+
+if __name__ == '__main__':
+    df_train, df_valid, df_test = load_mpii_dataframes()
+    train(df_train, params={
+        'learning_rate': 0.001,
+        'epochs': 999999999999
+    })

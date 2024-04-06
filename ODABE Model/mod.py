@@ -30,3 +30,45 @@ class Net(nn.Module):
         self.linear3 = nn.Linear(in_features=4096, out_features=2)
 
         self._initialize_weights()
+
+    def _initialize_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
+                m.weight.data.normal_(0, math.sqrt(2. / n))
+                if m.bias is not None:
+                    m.bias.data.zero_()
+            elif isinstance(m, nn.BatchNorm2d):
+                m.weight.data.fill_(1)
+                m.bias.data.zero_()
+            elif isinstance(m, nn.Linear):
+                m.weight.data.normal_(0, 0.01)
+                m.bias.data.zero_()
+
+    def forward(self, x):
+        x = x.permute(0, 3, 2, 1)
+        u = F.relu(self.conv1(x))
+        u = self.maxp1(u)
+
+        u = F.relu(self.conv2(u))
+        u = self.maxp2(u)
+
+        u = F.relu(self.conv3(u))
+        u = F.relu(self.conv4(u))
+        u = F.relu(self.conv5(u))
+        u = self.maxp5(u)
+
+        w = F.relu(self.conv1_spatial(u))
+        w = F.relu(self.conv2_spatial(w))
+        w = F.relu(self.conv3_spatial(w))
+
+        v = u * w
+
+        f = v.view(x.size(0), -1)
+
+        out = F.relu(self.linear1(f))
+        out = F.relu(self.linear2(out))
+        out = torch.sigmoid(self.linear3(out))
+        x_axis = out[:, 0].view(-1, 1)
+        y_axis = out[:, 1].view(-1, 1)
+        return x_axis, y_axis
