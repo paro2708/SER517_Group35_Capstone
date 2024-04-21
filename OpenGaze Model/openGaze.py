@@ -4,7 +4,7 @@ import pytorch_lightning as pl
 from openGazeData import openGazeData
 from torch.utils.data import DataLoader
 import torch.nn.functional as F
-from torch.optim.lr_scheduler import ReduceLROnPlateau
+from torch.optim.lr_scheduler import _LRScheduler, ReduceLROnPlateau, ExponentialLR
 import os
 '''
 This code defines a comprehensive model for gaze tracking, leveraging
@@ -20,7 +20,7 @@ class openGaze(pl.LightningModule):
         self.workers = 7
         print("Data Path: ", data_path)
         self.save_path = save_path
-    
+        torch.set_float32_matmul_precision('high')
         self.eyeModel = eyeModel() #Initialized the eye model
         self.landMark = landMark() #Initialized landmark model
 
@@ -51,7 +51,7 @@ class openGaze(pl.LightningModule):
         y_hat = self(l_eye, r_eye, kps)
         loss = F.mse_loss(y_hat, y)
         print('train_loss', loss)
-        self.log('train_loss', loss, on_step=True, on_epoch=True)
+        self.log('train_loss', loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
         return loss
     
     def train_dataloader(self):
@@ -74,20 +74,24 @@ class openGaze(pl.LightningModule):
         y_hat = self(l_eye, r_eye, kps)
         val_loss = F.mse_loss(y_hat, y)
         print('val_loss', val_loss)
-        self.log('val_loss', val_loss, on_step=True, on_epoch=True)
+        self.log('val_loss', val_loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
         return val_loss
     
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), lr=self.learningRate, betas=(0.9, 0.999), eps=1e-07)
-#         scheduler = ExponentialLR(optimizer, gamma=0.64, verbose=True)
-        scheduler = ReduceLROnPlateau(optimizer, 'min', verbose=True)
+        # Use AdamW for potentially better performance due to decoupled weight decay regularization
+        optimizer = torch.optim.AdamW(self.parameters(), lr=self.learningRate, betas=(0.9, 0.999), eps=1e-08, weight_decay=1e-2)
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=10)
+
         return {
             'optimizer': optimizer,
             'lr_scheduler': {
                 'scheduler': scheduler,
-                'monitor': 'val_loss'
+                'monitor': 'val_loss',
+                'frequency': 1,  # Check every epoch
+                'name': 'ReduceLROnPlateau'
             }
         }
+
 '''
 This class defines a convolutional neural network (CNN) model for processing eye images.
 It consists of three convolutional layers, each followed by batch normalization, a leaky
@@ -101,19 +105,22 @@ class eyeModel(nn.Module):
             nn.Conv2d(3, 32, kernel_size=7, stride=2, padding=0), #First Convolutional Layer
             nn.BatchNorm2d(32, momentum=0.9),
             nn.LeakyReLU(inplace=True),
-            nn.AvgPool2d(kernel_size=2),
+            nn.MaxPool2d(kernel_size=2),
+            nn.CrossMapLRN2d(size=5, alpha=0.00001, beta=0.75, k = 1.0),
             nn.Dropout(0.02),
             
             nn.Conv2d(32, 64, kernel_size=5, stride=2, padding=0), #Second Convolutional Layer
             nn.BatchNorm2d(64, momentum=0.9),
             nn.LeakyReLU(inplace=True),
-            nn.AvgPool2d(kernel_size=2),
+            nn.MaxPool2d(kernel_size=2),
+            nn.CrossMapLRN2d(size=5, alpha=0.00001, beta=0.75, k = 1.0),
             nn.Dropout(0.02),
             
             nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=0), #Third Convolutional Layer
             nn.BatchNorm2d(128, momentum=0.9),
             nn.LeakyReLU(inplace=True),
-            nn.AvgPool2d(kernel_size=2),
+            nn.MaxPool2d(kernel_size=2),
+            nn.CrossMapLRN2d(size=5, alpha=0.00001, beta=0.75, k = 1.0),
             nn.Dropout(0.02),
         )
 
@@ -143,6 +150,7 @@ class landMark(nn.Module):
     def forward(self, x):
         x = self.model(x)
         return x
+    
     
 #xy = openGaze()
 #print(xy.eval())
