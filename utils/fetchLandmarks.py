@@ -10,7 +10,6 @@ from tqdm import tqdm
 Add eye landmarks to the MIT Gaze Capture Dataset using DLib
 '''
 
-<<<<<<< HEAD
 device_dimensions = {
     'iPhone 6': {'width_pix': 750, 'height_pix': 1334, 'width_mm': 67.0, 'height_mm': 138.1},
     'iPhone 6s Plus': {'width_pix': 1080, 'height_pix': 1920, 'width_mm': 77.9, 'height_mm': 158.2},
@@ -29,8 +28,6 @@ device_dimensions = {
 }
 
 
-=======
->>>>>>> c80dce1 (Utils Added)
 def in_box(box, point):
     x1, y1, w, h = box
     x2, y2 = x1+w, y1+h
@@ -52,7 +49,6 @@ def add_kps(files, p):
         img = cv2.imread(i)
         bw_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         meta = json.load(open(i.replace('images', 'meta').replace('.jpg', '.json')))
-<<<<<<< HEAD
 
         meta_file_path = i.replace('images', 'meta').replace('.jpg', '.json')
         with open(meta_file_path, 'r') as meta_file:
@@ -71,8 +67,6 @@ def add_kps(files, p):
             # Handle unknown device case, maybe log it or use default dimensions
             print(f"Unknown device: {device}")
             
-=======
->>>>>>> c80dce1 (Utils Added)
         leye_x, leye_y, leye_w, leye_h = meta['leye_x'], meta['leye_y'], meta['leye_w'], meta['leye_h']
         reye_x, reye_y, reye_w, reye_h = meta['reye_x'], meta['reye_y'], meta['reye_w'], meta['reye_h']
         if(meta['face_valid']):
@@ -121,7 +115,4 @@ def main():
     
 if __name__ == '__main__':
     main()
-<<<<<<< HEAD
 
-=======
->>>>>>> c80dce1 (Utils Added)
