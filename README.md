@@ -39,31 +39,36 @@ To set up this project locally, run the following commands:
 Run on bash
 - git clone https://github.com/paro2708/SER517_Group35_Capstone
 - cd SER517_Group35_Capstone
+- install pytorch modules using the following command (optional)
+```
+   pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+```
+- install requirements.txt
+- download shape_predictor_68_face_landmarks.dat file form [Github Repository](https://github.com/italojs/facial-landmarks-recognition.git) 
 
 ### Data Preprocessing
 Before using the main functionalities of this project, it is essential to preprocess the dataset to ensure optimal performance and accuracy of the software. The preprocessing steps are facilitated by several scripts located in the `utils` directory. These scripts are designed to clean, normalize, and prepare the data for analysis or model training.
 
 #### Files in the `utils` Directory
-
-- extractEye.py: This script is designed to detect and extract the eye region from images. It likely uses image processing techniques or machine learning models to locate eyes within a given image and isolate them for further analysis or processing.
+- preProcess.py: This script is responsible for preparing the data before analysis or modeling. It typically includes steps such as cleaning, transforming, and standardizing the data to ensure it is ready for further processing.
 
 - fetchLandmarks.py: This file is used to identify and extract facial landmarks from images. This script typically employs facial recognition algorithms to pinpoint key features on the face, such as the eyes, nose, mouth, and jawline, which are crucial for advanced image processing tasks or facial analysis applications.
 
+- extractEye.py: This script is designed to detect and extract the eye region from images. It likely uses image processing techniques or machine learning models to locate eyes within a given image and isolate them for further analysis or processing.
+
 - normalizeData.py: This script is designed to normalize the data by scaling the features to a standard range. This process ensures that all input features contribute equally to the analysis and prevents any one feature from dominating due to its scale.
-
-- preProcess.py: This script is responsible for preparing the data before analysis or modeling. It typically includes steps such as cleaning, transforming, and standardizing the data to ensure it is ready for further processing.
-
 
 #### Running the Preprocessing Scripts
 
 To run the preprocessing scripts, navigate to the `utils` directory and execute the following commands:
 
-Run on bash
-- cd utils
-- python preProcess.py
-- python fetchLandmarks.py
-- python extractEye.py
-- python normalizeData.py
+```
+   cd utils
+   python preProcess.py
+   python fetchLandmarks.py
+   python extractEye.py
+   python normalizeData.py
+```
 
 
 #### GazeRefineNet
@@ -79,9 +84,24 @@ Run on bash
 
 #### Running the GazeRefineNet Model
 Run on bash
-- cd GazeRefineNet Model
-- python train.py
+```
+   cd GazeRefineNet Model
+   python train.py
+```
+#### Opengaze Model
+- openGaze.py - This file contains the core implementation of the OpenGaze model. It defines the neural network architecture used for refining gaze estimates, including layer configurations, forward pass definitions, and loss calculations specific to gaze estimation tasks.
 
+- openGazeData.py - This script is designed to handle data loading and preprocessing specifically tailored for the OpenGaze model. It includes functionality to read gaze data from files, preprocess it (e.g., normalization), and organize it into a format suitable for model training and evaluation.
+
+- train.py - As commonly used in machine learning projects, this file contains the training loop for the Opengaze model. It includes loading the model and data, setting up the training parameters, running the training epochs, and saving the trained model. 
+
+- test.ipynb - This is a python notebook provided to help in model testing and evalutions. It will also help in visualization of the results, generating scatterplots. 
+
+#### Running the OpenGaze Model
+```
+   cd OpenGaze Model
+   python train.py
+```
 ### Challenges and Future Work
 - The study identifies the need for improvements in computational efficiency to enhance the robustness and adaptability of these models.
 - Future research will focus on refining these technologies to support a wider array of applications, making eye-tracking more accessible and inclusive.
