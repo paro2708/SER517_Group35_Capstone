@@ -37,8 +37,8 @@ Before you begin, ensure you have the following installed:
 ### Setup
 To set up this project locally, run the following commands:
 Run on bash
-git clone https://github.com/paro2708/SER517_Group35_Capstone
-cd SER517_Group35_Capstone
+- git clone https://github.com/paro2708/SER517_Group35_Capstone
+- cd SER517_Group35_Capstone
 
 ### Data Preprocessing
 Before using the main functionalities of this project, it is essential to preprocess the dataset to ensure optimal performance and accuracy of the software. The preprocessing steps are facilitated by several scripts located in the `utils` directory. These scripts are designed to clean, normalize, and prepare the data for analysis or model training.
@@ -59,11 +59,11 @@ Before using the main functionalities of this project, it is essential to prepro
 To run the preprocessing scripts, navigate to the `utils` directory and execute the following commands:
 
 Run on bash
-cd utils
-python preProcess.py
-python fetchLandmarks.py
-python extractEye.py
-python normalizeData.py
+- cd utils
+- python preProcess.py
+- python fetchLandmarks.py
+- python extractEye.py
+- python normalizeData.py
 
 
 #### GazeRefineNet
@@ -79,10 +79,8 @@ python normalizeData.py
 
 #### Running the GazeRefineNet Model
 Run on bash
-cd GazeRefineNet Model
-python train.py
-
-
+- cd GazeRefineNet Model
+- python train.py
 
 ### Challenges and Future Work
 - The study identifies the need for improvements in computational efficiency to enhance the robustness and adaptability of these models.
