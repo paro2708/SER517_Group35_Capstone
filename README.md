@@ -102,6 +102,24 @@ Run on bash
    cd OpenGaze Model
    python train.py
 ```
+
+#### ODABE Model
+- data_load.py - Loads and prepares datasets for training, including the GazeCapture dataset and custom datasets. It provides functions to load GazeCapture dataframes, custom dataframes, and decorate datasets with resizing, normalizing, and conversion to tensors.
+
+- model_vgg.py - Defines a VGG neural network model for gaze estimation. It consists of a feature extractor followed by a regressor for predicting x and y coordinates. The feature extractor is created using VGG architecture, and the regressor consists of fully connected layers with ReLU activation.
+
+- prepare_custom_dataset.py - Prepares custom datasets by resizing images, extracting faces, and generating metadata containing image filenames and corresponding x, y coordinates normalized to the image size.
+
+- prepare_gc_face_gaze.py - Prepares the GazeCapture dataset for gaze estimation by resizing images, extracting faces, and generating metadata containing image filenames and corresponding x, y coordinates normalized to the screen size.
+
+- train.py - Trains the gaze estimation model using the prepared datasets. It includes functions for training, evaluation, and fine-tuning the model. It also handles saving and loading model weights and generating debug images during training for visualization purposes.
+
+#### Running the ODABE Model
+```
+   cd ODABE Model
+   python train.py
+```
+
 ### Challenges and Future Work
 - The study identifies the need for improvements in computational efficiency to enhance the robustness and adaptability of these models.
 - Future research will focus on refining these technologies to support a wider array of applications, making eye-tracking more accessible and inclusive.

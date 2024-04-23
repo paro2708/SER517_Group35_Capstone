@@ -8,6 +8,14 @@ glob2
 jsonlib
 tqdm
 dlib
+seaborn
+opencv-python
+scikit-learn
+numpy
+pandas
+face-recognition
+scipy
+argparse
 
 # Note: Please install torch, torchvision, and torchaudio with the following command:
 # pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
