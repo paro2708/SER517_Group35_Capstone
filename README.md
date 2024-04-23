@@ -33,18 +33,17 @@ Our comparative analysis yielded significant insights into the strengths and lim
 ### Prerequisites
 Before you begin, ensure you have the following installed:
 - Python 3.8+
-- Any other dependencies that your project relies on.
 
 ### Setup
 To set up this project locally, run the following commands:
-```bash
+Run on bash
 git clone https://github.com/paro2708/SER517_Group35_Capstone
 cd SER517_Group35_Capstone
 
-## Data Preprocessing
+### Data Preprocessing
 Before using the main functionalities of this project, it is essential to preprocess the dataset to ensure optimal performance and accuracy of the software. The preprocessing steps are facilitated by several scripts located in the `utils` directory. These scripts are designed to clean, normalize, and prepare the data for analysis or model training.
 
-### Files in the `utils` Directory
+#### Files in the `utils` Directory
 
 - extractEye.py: This script is designed to detect and extract the eye region from images. It likely uses image processing techniques or machine learning models to locate eyes within a given image and isolate them for further analysis or processing.
 
@@ -55,11 +54,11 @@ Before using the main functionalities of this project, it is essential to prepro
 - preProcess.py: This script is responsible for preparing the data before analysis or modeling. It typically includes steps such as cleaning, transforming, and standardizing the data to ensure it is ready for further processing.
 
 
-### Running the Preprocessing Scripts
+#### Running the Preprocessing Scripts
 
 To run the preprocessing scripts, navigate to the `utils` directory and execute the following commands:
 
-```bash
+Run on bash
 cd utils
 python preProcess.py
 python fetchLandmarks.py
@@ -67,7 +66,7 @@ python extractEye.py
 python normalizeData.py
 
 
-### GazeRefineNet
+#### GazeRefineNet
 - GazeRefineNet.py - This file contains the core implementation of the GazeRefineNet model. It defines the neural network architecture used for refining gaze estimates, including layer configurations, forward pass definitions, and loss calculations specific to gaze estimation tasks.
 
 - GazeRefineNetEnhanced.py - This script is an extension or an enhanced version of the GazeRefineNet model. It includes improvements or modifications to the original architecture, such as additional layers, and enhanced training techniques to improve accuracy and performance.
@@ -78,8 +77,8 @@ python normalizeData.py
 
 - train.py - As commonly used in machine learning projects, this file contains the training loop for the GazeRefineNet model. It includes loading the model and data, setting up the training parameters (like the optimizer and loss function), running the training epochs, and saving the trained model. It might also include validation/testing within or after the training process to monitor the model's performance.
 
-### Running the GazeRefineNet Model
-```bash
+#### Running the GazeRefineNet Model
+Run on bash
 cd GazeRefineNet Model
 python train.py
 
